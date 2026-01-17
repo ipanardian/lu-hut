@@ -8,6 +8,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -255,4 +256,134 @@ func TestFindGitRoot(t *testing.T) {
 	if root != tmpDir {
 		t.Errorf("got %q, want %q", root, tmpDir)
 	}
+}
+
+func TestDirectoryListerRecursive(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create directory structure:
+	// tmpDir/
+	//   file1.txt
+	//   subdir1/
+	//     file2.txt
+	//     subdir2/
+	//       file3.txt
+	//   subdir3/
+	//     file4.txt
+
+	// Create files and directories
+	files := map[string]string{
+		"file1.txt":                 "content1",
+		"subdir1/file2.txt":         "content2",
+		"subdir1/subdir2/file3.txt": "content3",
+		"subdir3/file4.txt":         "content4",
+	}
+
+	for path, content := range files {
+		fullPath := filepath.Join(tmpDir, path)
+		dir := filepath.Dir(fullPath)
+		err := os.MkdirAll(dir, 0755)
+		if err != nil {
+			t.Fatalf("failed to create directory %s: %v", dir, err)
+		}
+		err = os.WriteFile(fullPath, []byte(content), 0644)
+		if err != nil {
+			t.Fatalf("failed to create file %s: %v", fullPath, err)
+		}
+	}
+
+	t.Run("recursive listing", func(t *testing.T) {
+		config := Config{Recursive: true}
+		lister := NewDirectoryLister(config)
+		err := lister.List(tmpDir)
+		if err != nil {
+			t.Errorf("List() error = %v", err)
+		}
+	})
+
+	t.Run("recursive with hidden files", func(t *testing.T) {
+		// Create a hidden directory
+		hiddenDir := filepath.Join(tmpDir, ".hidden")
+		err := os.Mkdir(hiddenDir, 0755)
+		if err != nil {
+			t.Fatalf("failed to create hidden directory: %v", err)
+		}
+		err = os.WriteFile(filepath.Join(hiddenDir, "hidden.txt"), []byte("hidden"), 0644)
+		if err != nil {
+			t.Fatalf("failed to create hidden file: %v", err)
+		}
+
+		config := Config{Recursive: true, ShowHidden: true}
+		lister := NewDirectoryLister(config)
+		err = lister.List(tmpDir)
+		if err != nil {
+			t.Errorf("List() error = %v", err)
+		}
+	})
+
+	t.Run("recursive with filter", func(t *testing.T) {
+		config := Config{
+			Recursive:       true,
+			IncludePatterns: []string{"*.txt"},
+		}
+		lister := NewDirectoryLister(config)
+		err := lister.List(tmpDir)
+		if err != nil {
+			t.Errorf("List() error = %v", err)
+		}
+	})
+}
+
+func TestDirectoryListerRecursiveDepthLimit(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create a deep directory structure
+	deepPath := tmpDir
+	for i := 0; i < 10; i++ {
+		deepPath = filepath.Join(deepPath, fmt.Sprintf("level%d", i))
+		err := os.MkdirAll(deepPath, 0755)
+		if err != nil {
+			t.Fatalf("failed to create deep directory: %v", err)
+		}
+		err = os.WriteFile(filepath.Join(deepPath, "file.txt"), []byte("content"), 0644)
+		if err != nil {
+			t.Fatalf("failed to create file: %v", err)
+		}
+	}
+
+	t.Run("depth limit of 3", func(t *testing.T) {
+		config := Config{
+			Recursive: true,
+			MaxDepth:  3,
+		}
+		lister := NewDirectoryLister(config)
+		err := lister.List(tmpDir)
+		if err != nil {
+			t.Errorf("List() error = %v", err)
+		}
+	})
+
+	t.Run("depth limit of 0 uses default", func(t *testing.T) {
+		config := Config{
+			Recursive: true,
+			MaxDepth:  0,
+		}
+		lister := NewDirectoryLister(config)
+		err := lister.List(tmpDir)
+		if err != nil {
+			t.Errorf("List() error = %v", err)
+		}
+	})
+
+	t.Run("depth limit of 1", func(t *testing.T) {
+		config := Config{
+			Recursive: true,
+			MaxDepth:  1,
+		}
+		lister := NewDirectoryLister(config)
+		err := lister.List(tmpDir)
+		if err != nil {
+			t.Errorf("List() error = %v", err)
+		}
+	})
 }

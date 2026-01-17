@@ -1,6 +1,6 @@
 // Package main provides a modern alternative for the Unix ls command.
 // Displays file listings in a beautiful table format with colors,
-// git integration, and human-readable file sizes.
+// filtering, git integration, and human-readable file sizes.
 //
 // Coordinate first, complain later.
 //
@@ -10,11 +10,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
 	"os/user"
 	"path/filepath"
 	"sort"
@@ -223,6 +225,8 @@ type Config struct {
 	ShowGit         bool
 	ShowHidden      bool
 	ShowUser        bool
+	Recursive       bool
+	MaxDepth        int
 	IncludePatterns []string
 	ExcludePatterns []string
 }
@@ -255,6 +259,16 @@ func NewDirectoryLister(config Config) *DirectoryLister {
 }
 
 func (d *DirectoryLister) List(path string) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		cancel()
+	}()
+
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return err
@@ -268,13 +282,17 @@ func (d *DirectoryLister) List(path string) error {
 		return fmt.Errorf("path %s is not a directory", absPath)
 	}
 
+	if d.config.ShowGit {
+		d.gitRepo, _ = NewGitRepository(absPath)
+	}
+
+	if d.config.Recursive {
+		return d.listRecursive(ctx, absPath)
+	}
+
 	entries, err := os.ReadDir(absPath)
 	if err != nil {
 		return err
-	}
-
-	if d.config.ShowGit {
-		d.gitRepo, _ = NewGitRepository(absPath)
 	}
 
 	files := d.collectFiles(absPath, entries)
@@ -283,6 +301,81 @@ func (d *DirectoryLister) List(path string) error {
 
 	renderer := NewTableRenderer(d.config)
 	renderer.Render(files, time.Now())
+
+	return nil
+}
+
+func (d *DirectoryLister) listRecursive(ctx context.Context, rootPath string) error {
+	var (
+		maxDepth = 30
+		maxDirs  = 10000
+	)
+	type dirEntry struct {
+		path  string
+		level int
+	}
+
+	if d.config.MaxDepth > 0 {
+		maxDepth = d.config.MaxDepth
+	}
+
+	dirs := []dirEntry{{path: rootPath, level: 0}}
+	dirCount := 0
+
+	for len(dirs) > 0 {
+		select {
+		case <-ctx.Done():
+			fmt.Println("\nOperation cancelled by user")
+			return ctx.Err()
+		default:
+		}
+
+		current := dirs[0]
+		dirs = dirs[1:]
+
+		if current.level >= maxDepth {
+			if current.level == maxDepth {
+				indent := strings.Repeat("  ", current.level-1)
+				fmt.Printf("\n%s%s: (max depth reached)\n", indent, current.path)
+			}
+			continue
+		}
+
+		dirCount++
+		if dirCount > maxDirs {
+			fmt.Printf("\nReached maximum directory limit (%d). Stopping recursion.\n", maxDirs)
+			break
+		}
+
+		if current.level > 0 {
+			indent := strings.Repeat("  ", current.level-1)
+			fmt.Printf("\n%s%s:\n", indent, current.path)
+		}
+
+		entries, err := os.ReadDir(current.path)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error reading %s: %v\n", current.path, err)
+			continue
+		}
+
+		files := d.collectFiles(current.path, entries)
+		files = d.filter.Apply(files, d.config.ShowHidden)
+		d.sortStrat.Sort(files, d.config.Reverse)
+
+		if len(files) == 0 {
+			continue
+		}
+
+		renderer := NewTableRenderer(d.config)
+		renderer.Render(files, time.Now())
+
+		for _, file := range files {
+			if file.IsDir {
+				dirPath := filepath.Join(current.path, file.Name)
+				dirs = append(dirs, dirEntry{path: dirPath, level: current.level + 1})
+			}
+		}
+	}
 
 	return nil
 }
@@ -332,7 +425,7 @@ func newRootCommand() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "lu [path]",
 		Short: "A modern alternative to the Unix ls command with table formatting",
-		Long: `lu-hutg is a modern alternative to the Unix ls command with box-drawn tables, colors, and git integration.
+		Long: `lu-hutg is a modern alternative to the Unix ls command with box-drawn tables, colors, filtering, and git integration.
 
 GitHub: https://github.com/ipanardian/lu-hutg
 Version: v1.0.0`,
@@ -362,7 +455,9 @@ Version: v1.0.0`,
 	rootCmd.Flags().BoolVarP(&config.Reverse, "reverse", "r", false, "reverse sort order")
 	rootCmd.Flags().BoolVarP(&config.ShowGit, "git", "g", false, "show git status inline")
 	rootCmd.Flags().BoolVarP(&config.ShowHidden, "hidden", "h", false, "show hidden files")
-	rootCmd.Flags().BoolVarP(&config.ShowUser, "user", "u", false, "show user & group")
+	rootCmd.Flags().BoolVarP(&config.ShowUser, "user", "u", false, "show user and group ownership metadata")
+	rootCmd.Flags().BoolVarP(&config.Recursive, "recursive", "R", false, "list subdirectories recursively")
+	rootCmd.Flags().IntVarP(&config.MaxDepth, "max-depth", "L", 0, "maximum recursion depth (0 = no limit, default: 100)")
 	rootCmd.Flags().StringSliceVarP(&config.IncludePatterns, "include", "i", nil, "include files matching glob patterns (quote the pattern)")
 	rootCmd.Flags().StringSliceVarP(&config.ExcludePatterns, "exclude", "x", nil, "exclude files matching glob patterns (quote the pattern)")
 	rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
@@ -770,7 +865,7 @@ func extractUserGroup(fileInfo os.FileInfo) (string, string) {
 func showColoredHelp(_ *cobra.Command) {
 	fmt.Printf("\n%s %s\n\n",
 		color.New(color.FgCyan, color.Bold).Sprint("lu-hutg v1.0.0"),
-		color.New(color.FgHiWhite).Sprint("- a modern alternative to the Unix ls command with box-drawn tables, colors, and git integration"),
+		color.New(color.FgHiWhite).Sprint("- a modern alternative to the Unix ls command with box-drawn tables, colors, filtering and git integration"),
 	)
 	fmt.Printf("%s\n\n", color.New(color.FgHiBlack).Sprint("GitHub: https://github.com/ipanardian/lu-hutg"))
 
@@ -785,9 +880,10 @@ func showColoredHelp(_ *cobra.Command) {
 		{"-t, --sort-modified", "sort by modified time (newest first)"},
 		{"-r, --reverse", "reverse sort order"},
 		{"-g, --git", "show git status inline"},
-		{"-a, --author", "show file author/owner"},
 		{"-h, --hidden", "show hidden files"},
-		{"-u, --unit", "show unit coordination (user & group)"},
+		{"-u, --user", "show user and group ownership metadata."},
+		{"-R, --recursive", "list subdirectories recursively"},
+		{"-L, --max-depth", "maximum recursion depth (0 = no limit, default: 30)"},
 		{"-i, --include", "include files matching glob patterns (quote the pattern)"},
 		{"-x, --exclude", "exclude files matching glob patterns (quote the pattern)"},
 		{"--help", "show this help message"},
@@ -807,11 +903,10 @@ func showColoredHelp(_ *cobra.Command) {
 		"lu -tr",
 		"lu -g",
 		"lu -tg",
-		"lu -a",
 		"lu -ta",
 		"lu -i '*.go'",
-		"lu -x '*.tmp'",
-		"lu -hutg",
+		"lu -x '*.tambang'",
+		"lu -hutg (Lord's mode)",
 	}
 
 	for _, ex := range examples {

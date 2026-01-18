@@ -11,6 +11,7 @@ type Config struct {
 	ShowGit         bool
 	ShowHidden      bool
 	ShowUser        bool
+	ShowExactTime   bool
 	Recursive       bool
 	MaxDepth        int
 	IncludePatterns []string

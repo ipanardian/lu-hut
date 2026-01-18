@@ -84,7 +84,7 @@ func (r *Table) buildTableData(files []model.FileEntry, now time.Time) [][]strin
 		row := []string{
 			formatName(file),
 			formatSize(file.Size, file.IsDir),
-			formatModified(file.ModTime, now),
+			formatModified(file.ModTime, now, r.config.ShowExactTime),
 			formatPermissions(file.Mode),
 		}
 		if r.config.ShowGit {
@@ -102,6 +102,10 @@ func (r *Table) buildTableData(files []model.FileEntry, now time.Time) [][]strin
 func (r *Table) columnConstraints() ([]int, []int) {
 	mins := []int{15, 6, 10, 10}
 	maxs := []int{50, 10, 15, 12}
+	if r.config.ShowExactTime {
+		mins[2] = 15
+		maxs[2] = 18
+	}
 	if r.config.ShowGit {
 		mins = append(mins, 6)
 		maxs = append(maxs, 12)

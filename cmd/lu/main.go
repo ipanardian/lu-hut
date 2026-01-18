@@ -64,6 +64,7 @@ Version: ` + constants.Version,
 	rootCmd.Flags().BoolVarP(&cfg.ShowGit, "git", "g", false, "show git status inline")
 	rootCmd.Flags().BoolVarP(&cfg.ShowHidden, "hidden", "h", false, "show hidden files")
 	rootCmd.Flags().BoolVarP(&cfg.ShowUser, "user", "u", false, "show user and group ownership metadata")
+	rootCmd.Flags().BoolVarP(&cfg.ShowExactTime, "exact-time", "T", false, "show exact modification time instead of relative")
 	rootCmd.Flags().BoolVarP(&cfg.Recursive, "recursive", "R", false, "list subdirectories recursively")
 	rootCmd.Flags().IntVarP(&cfg.MaxDepth, "max-depth", "L", 0, "maximum recursion depth (0 = no limit, default: 30)")
 	rootCmd.Flags().StringSliceVarP(&cfg.IncludePatterns, "include", "i", nil, "include files matching glob patterns (quote the pattern)")

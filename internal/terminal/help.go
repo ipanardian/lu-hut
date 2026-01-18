@@ -31,6 +31,7 @@ func ShowColoredHelp(_ *cobra.Command) {
 		{"-g, --git", "show git status inline"},
 		{"-h, --hidden", "show hidden files"},
 		{"-u, --user", "show user and group ownership metadata."},
+		{"-T, --exact-time", "show exact modification time instead of relative"},
 		{"-R, --recursive", "list subdirectories recursively"},
 		{"-L, --max-depth", "maximum recursion depth (0 = no limit, default: 30)"},
 		{"-i, --include", "include files matching glob patterns (quote the pattern)"},

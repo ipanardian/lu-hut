@@ -3,6 +3,7 @@ package renderer
 import (
 	"io/fs"
 	"testing"
+	"time"
 )
 
 func TestCalculateDisplayWidths(t *testing.T) {
@@ -195,6 +196,50 @@ func TestLookupMin(t *testing.T) {
 			result := lookupMin(tt.mins, tt.idx, tt.fallback)
 			if result != tt.expected {
 				t.Errorf("lookupMin(%v, %d, %d) = %d, want %d", tt.mins, tt.idx, tt.fallback, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestFormatModified(t *testing.T) {
+	now := time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)
+	tests := []struct {
+		name      string
+		t         time.Time
+		showExact bool
+		expected  string
+	}{
+		{
+			name:      "relative - seconds ago",
+			t:         now.Add(-30 * time.Second),
+			showExact: false,
+			expected:  "30 seconds ago",
+		},
+		{
+			name:      "relative - minutes ago",
+			t:         now.Add(-5 * time.Minute),
+			showExact: false,
+			expected:  "5 minutes ago",
+		},
+		{
+			name:      "relative - hours ago",
+			t:         now.Add(-2 * time.Hour),
+			showExact: false,
+			expected:  "2 hours ago",
+		},
+		{
+			name:      "exact time",
+			t:         time.Date(2024, 1, 15, 9, 30, 0, 0, time.UTC),
+			showExact: true,
+			expected:  "2024-01-15 09:30:00",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := formatModified(tt.t, now, tt.showExact)
+			if result != tt.expected {
+				t.Errorf("formatModified(%v, %v, %v) = %q, want %q", tt.t, now, tt.showExact, result, tt.expected)
 			}
 		})
 	}

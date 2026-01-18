@@ -38,8 +38,8 @@
 ## 📸 Visual Preview
 
 <p align="center">
-    <img src="graphics/Screenshot-1.png" style="max-width: 100%;" alt="demo">
-    <img src="graphics/Screenshot-2.png" style="max-width: 100%;" alt="demo">
+	<img src="graphics/Screenshot-1.png" width="49%" alt="demo">
+	<img src="graphics/Screenshot-2.png" width="49%" alt="demo">
 </p>
 
 ## 🛠️ Operational Installation

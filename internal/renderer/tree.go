@@ -175,6 +175,13 @@ func (r *Tree) hasMatchingDescendants(dirPath string) bool {
 			return filepath.SkipDir
 		}
 
+		if !r.config.ShowHidden && strings.HasPrefix(d.Name(), ".") {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
 		if !d.IsDir() {
 			if r.filter.ShouldInclude(d.Name()) && !r.filter.ShouldExclude(d.Name()) {
 				result = true

@@ -1,4 +1,4 @@
-module github.com/ipanardian/lu-hutg
+module github.com/ipanardian/lu-hut
 
 go 1.25.1
 

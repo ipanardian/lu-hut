@@ -1,5 +1,5 @@
 # lu Makefile
-# GitHub: https://github.com/ipanardian/lu-hutg
+# GitHub: https://github.com/ipanardian/lu-hut
 # Author: Ipan Ardian
 # Version: v1.0.0
 
@@ -10,16 +10,16 @@ all: build
 
 # Build for current platform
 build:
-	go build -ldflags="-s -w" -o lu lu.go
+	go build -ldflags="-s -w" -o bin/lu ./cmd/lu
 
 # Build for Linux
 build-linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o lu-linux-amd64 lu.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/lu-linux-amd64 ./cmd/lu
 
 # Build for macOS
 build-mac:
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o lu-darwin-amd64 lu.go
-	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o lu-darwin-arm64 lu.go
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o bin/lu-darwin-amd64 ./cmd/lu
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o bin/lu-darwin-arm64 ./cmd/lu
 
 # Build for all platforms
 build-all: build-linux build-mac
@@ -28,7 +28,7 @@ build-all: build-linux build-mac
 install: build
 	@echo "Installing lu to ~/bin..."
 	@mkdir -p ~/bin
-	@cp lu ~/bin/
+	@cp bin/lu ~/bin/
 	@echo "Installation complete! Make sure ~/bin is in your PATH."
 
 # Install Linux binary
@@ -52,19 +52,19 @@ install-mac: build-mac
 # Install to /usr/local/bin (requires sudo)
 install-system: build
 	@echo "Installing lu to /usr/local/bin..."
-	@sudo cp lu /usr/local/bin/
+	@sudo cp bin/lu /usr/local/bin/
 	@echo "Installation complete! lu is now available system-wide."
 
 # Run lu from source (pass args with ARGS, e.g. make run ARGS="-tg")
 ARGS ?=
 run:
 	@echo "Running lu from source with args: $(ARGS)"
-	go run . $(ARGS)
+	@go run ./cmd/lu $(ARGS)
 
 # Clean build artifacts
 clean:
 	@echo "Cleaning build artifacts..."
-	rm -f lu lu-*
+	rm -f bin/lu bin/lu-*
 	@go clean -cache
 	@echo "Clean complete!"
 

@@ -7,7 +7,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-REPO="ipanardian/lu-hutg"
+REPO="ipanardian/lu-hut"
 LATEST_RELEASE_URL="https://api.github.com/repos/${REPO}/releases/latest"
 print_info() {
     echo -e "${GREEN}[INFO]${NC} $1"
@@ -104,7 +104,7 @@ check_path() {
 }
 
 main() {
-    echo "lu-hutg Installation Script"
+    echo "lu-hut Installation Script"
     echo "======================="
     echo
 

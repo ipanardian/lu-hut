@@ -2,7 +2,7 @@
 //
 // Coordinate first, complain later.
 //
-// GitHub: https://github.com/ipanardian/lu-hutg
+// GitHub: https://github.com/ipanardian/lu-hut
 // Author: Ipan Ardian
 // Version: v1.0.0
 package table

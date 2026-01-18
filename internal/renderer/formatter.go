@@ -139,7 +139,7 @@ func formatSize(size int64, isDir bool) string {
 func formatModified(t time.Time, now time.Time, showExact bool) string {
 	if showExact {
 		c := color.New(color.FgHiWhite)
-		return c.Sprint(t.Format("Jan 17, 06 15:04"))
+		return c.Sprint(t.Format("Jan 2, 06 15:04"))
 	}
 
 	duration := now.Sub(t)
@@ -252,7 +252,7 @@ func formatGitStatus(status string) string {
 	}
 
 	switch status {
-	case "??":
+	case "?":
 		return color.New(color.FgRed, color.Bold).Sprint(status)
 	case "A", "AM":
 		return color.New(color.FgGreen, color.Bold).Sprint(status)

@@ -51,7 +51,7 @@ func (g *Repository) GetStatus(filePath string) string {
 	fileStatus := status.File(relPath)
 
 	if fileStatus.Worktree == git.Untracked {
-		return "??"
+		return "?"
 	}
 
 	if fileStatus.Worktree == git.Unmodified && fileStatus.Staging == git.Unmodified {

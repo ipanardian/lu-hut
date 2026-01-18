@@ -6,6 +6,7 @@
 //
 // Coordinate first, complain later.
 //
+// Copyright (C) 2026
 // GitHub: https://github.com/ipanardian/lu-hut
 // Author: Ipan Ardian
 package main

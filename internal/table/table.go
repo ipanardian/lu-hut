@@ -248,7 +248,11 @@ func (t *Table) printRow(rowIndex int, bc borderChars, isHeader bool) {
 		fmt.Print(bc.vertical)
 	}
 
-	for i, cell := range row {
+	for i := 0; i < len(t.columnWidths); i++ {
+		cell := ""
+		if i < len(row) {
+			cell = row[i]
+		}
 		cellWidth := utf8.RuneCountInString(stripANSI(cell))
 		maxWidth := t.columnWidths[i]
 
@@ -275,7 +279,7 @@ func (t *Table) printRow(rowIndex int, bc borderChars, isHeader bool) {
 			fmt.Print(cellContent)
 		}
 
-		if i < len(row)-1 {
+		if i < len(t.columnWidths)-1 {
 			if t.borderColor != nil {
 				t.borderColor.Print(bc.vertical)
 			} else {

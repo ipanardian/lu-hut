@@ -54,9 +54,13 @@ func (d *Lister) List(path string) error {
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(sigChan)
 	go func() {
-		<-sigChan
-		cancel()
+		select {
+		case <-sigChan:
+			cancel()
+		case <-ctx.Done():
+		}
 	}()
 
 	absPath, err := filepath.Abs(path)
@@ -110,16 +114,12 @@ func (d *Lister) listTree(_ context.Context, rootPath string) error {
 
 func (d *Lister) listRecursive(ctx context.Context, rootPath string) error {
 	var (
-		maxDepth = 30
+		maxDepth = d.config.MaxDepth
 		maxDirs  = 10000
 	)
 	type dirEntry struct {
 		path  string
 		level int
-	}
-
-	if d.config.MaxDepth > 0 {
-		maxDepth = d.config.MaxDepth
 	}
 
 	dirs := []dirEntry{{path: rootPath, level: 0}}
@@ -136,9 +136,12 @@ func (d *Lister) listRecursive(ctx context.Context, rootPath string) error {
 		current := dirs[0]
 		dirs = dirs[1:]
 
-		if current.level >= maxDepth {
+		if maxDepth > 0 && current.level >= maxDepth {
 			if current.level == maxDepth {
-				indent := strings.Repeat("  ", current.level-1)
+				indent := ""
+				if current.level > 0 {
+					indent = strings.Repeat("  ", current.level-1)
+				}
 				fmt.Printf("\n%s%s: (max depth reached)\n", indent, current.path)
 			}
 			continue

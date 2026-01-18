@@ -29,7 +29,7 @@ func main() {
 }
 
 func newRootCommand() *cobra.Command {
-	var cfg config.Config
+	cfg := config.NewDefaultConfig()
 
 	rootCmd := &cobra.Command{
 		Use:   "lu [path]",
@@ -43,6 +43,10 @@ Version: ` + constants.Version,
 			path := "."
 			if len(args) > 0 {
 				path = args[0]
+			}
+
+			if err := cfg.Validate(); err != nil {
+				return err
 			}
 
 			if path != "." {
@@ -70,7 +74,7 @@ Version: ` + constants.Version,
 	rootCmd.Flags().BoolVarP(&cfg.ShowExactTime, "exact-time", "T", false, "show exact modification time instead of relative")
 	rootCmd.Flags().BoolVarP(&cfg.Tree, "tree", "F", false, "display directory structure in a tree format")
 	rootCmd.Flags().BoolVarP(&cfg.Recursive, "recursive", "R", false, "list subdirectories recursively")
-	rootCmd.Flags().IntVarP(&cfg.MaxDepth, "max-depth", "L", 0, "maximum recursion depth (0 = no limit, default: 30)")
+	rootCmd.Flags().IntVarP(&cfg.MaxDepth, "max-depth", "L", cfg.MaxDepth, "maximum recursion depth (0 = no limit, default: 30)")
 	rootCmd.Flags().StringSliceVarP(&cfg.IncludePatterns, "include", "i", nil, "include files matching glob patterns (quote the pattern)")
 	rootCmd.Flags().StringSliceVarP(&cfg.ExcludePatterns, "exclude", "x", nil, "exclude files matching glob patterns (quote the pattern)")
 	rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {

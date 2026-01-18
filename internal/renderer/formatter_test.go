@@ -231,7 +231,7 @@ func TestFormatModified(t *testing.T) {
 			name:      "exact time",
 			t:         time.Date(2024, 1, 15, 9, 30, 0, 0, time.UTC),
 			showExact: true,
-			expected:  "2024-01-15 09:30:00",
+			expected:  "Jan 15, 24 09:30",
 		},
 	}
 

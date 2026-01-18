@@ -130,7 +130,10 @@ func formatSize(size int64, isDir bool) string {
 		exp++
 	}
 
-	units := []string{"KB", "MB", "GB", "TB"}
+	units := []string{"KB", "MB", "GB", "TB", "PB", "EB"}
+	if exp >= len(units) {
+		exp = len(units) - 1
+	}
 	result := fmt.Sprintf("%.1f %s", float64(size)/float64(div), units[exp])
 
 	return color.New(color.FgHiWhite).Sprint(result)

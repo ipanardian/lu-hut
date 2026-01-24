@@ -12,6 +12,7 @@ type Config struct {
 	ShowHidden      bool
 	ShowUser        bool
 	ShowExactTime   bool
+	ShowOctal       bool
 	Recursive       bool
 	Tree            bool
 	MaxDepth        int

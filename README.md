@@ -28,6 +28,7 @@
 - **Advanced Filtering Capability** - Strict inclusion and exclusion logic using glob patterns (`-i`, `-x`).
 - **Responsive Terminal Scaling** - Adaptive output that maintains data integrity across different terminal widths.
 - **Safe Recursive Listing** - Recursive directory traversal with depth limits and cancellation support.
+- **Octal Mode Display** - Option to display file modes in octal format.
 
 ---
 

@@ -26,9 +26,14 @@ func (r *Table) Render(files []model.FileEntry, now time.Time) {
 
 	terminalWidth := max(getTerminalWidth(), 40)
 
-	data := r.buildTableData(files, now)
-	displayWidths := calculateDisplayWidths(data)
 	mins, maxs := r.columnConstraints()
+	nameWidth := 0
+	if len(maxs) > 0 {
+		nameWidth = maxs[0]
+	}
+
+	data := r.buildTableData(files, now, nameWidth)
+	displayWidths := calculateDisplayWidths(data)
 
 	for i := range displayWidths {
 		if i < len(mins) && mins[i] > 0 && displayWidths[i] < mins[i] {
@@ -68,7 +73,7 @@ func (r *Table) Render(files []model.FileEntry, now time.Time) {
 	tbl.Print()
 }
 
-func (r *Table) buildTableData(files []model.FileEntry, now time.Time) [][]string {
+func (r *Table) buildTableData(files []model.FileEntry, now time.Time, nameWidth int) [][]string {
 	headers := []string{"Name", "Size", "Modified", "Perms"}
 	if r.config.ShowGit {
 		headers = append(headers, "Git")
@@ -82,7 +87,7 @@ func (r *Table) buildTableData(files []model.FileEntry, now time.Time) [][]strin
 
 	for i, file := range files {
 		row := []string{
-			formatName(file),
+			formatName(file, nameWidth),
 			formatSize(file.Size, file.IsDir),
 			formatModified(file.ModTime, now, r.config.ShowExactTime),
 			formatPermissions(file.Mode, r.config.ShowOctal),

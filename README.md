@@ -29,6 +29,7 @@
 - **Responsive Terminal Scaling** - Adaptive output that maintains data integrity across different terminal widths.
 - **Safe Recursive Listing** - Recursive directory traversal with depth limits and cancellation support.
 - **Octal Mode Display** - Option to display file modes in octal format.
+- **Symlink Target Display** - Symlink targets are shown inline as `name -> target`. Long targets are intelligently truncated and the tail is preserved.
 
 ---
 
@@ -159,6 +160,7 @@ Only one sorting mode is active at a time.
 - Use `-X` to group files by type for better organization
 - Tree view supports all flags including git status, sorting, and filtering
 - Recursive listing respects all filters and sorting options
+- Symlink targets are shown inline as `name -> target`. When targets are long they will be truncated smartly to preserve the trailing path (the tail is usually the most informative).
 - Press `Ctrl+C` during recursive listing to cancel safely
 
 ### ⚖️ Legal Disclaimer

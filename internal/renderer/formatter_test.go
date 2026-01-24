@@ -44,6 +44,125 @@ func TestCalculateDisplayWidths(t *testing.T) {
 	}
 }
 
+func TestTruncateMiddle(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		max      int
+		expected string
+	}{
+		{
+			name:     "no truncation",
+			input:    "short",
+			max:      10,
+			expected: "short",
+		},
+		{
+			name:     "single rune max",
+			input:    "abcdef",
+			max:      1,
+			expected: "…",
+		},
+		{
+			name:     "middle truncation",
+			input:    "windsurf",
+			max:      5,
+			expected: "wi…rf",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := truncateMiddle(tt.input, tt.max)
+			if result != tt.expected {
+				t.Errorf("truncateMiddle(%q, %d) = %q, want %q", tt.input, tt.max, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestTruncateTail(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		max      int
+		expected string
+	}{
+		{
+			name:     "no truncation",
+			input:    "short",
+			max:      10,
+			expected: "short",
+		},
+		{
+			name:     "single rune max",
+			input:    "abcdef",
+			max:      1,
+			expected: "…",
+		},
+		{
+			name:     "tail truncation",
+			input:    "this/is/a/very/long/path",
+			max:      10,
+			expected: "…long/path",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := truncateTail(tt.input, tt.max)
+			if result != tt.expected {
+				t.Errorf("truncateTail(%q, %d) = %q, want %q", tt.input, tt.max, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestTruncateSymlinkParts(t *testing.T) {
+	tests := []struct {
+		name         string
+		linkName     string
+		target       string
+		maxWidth     int
+		expectName   string
+		expectTarget string
+	}{
+		{
+			name:         "fits without truncation",
+			linkName:     "link",
+			target:       "/tmp/target",
+			maxWidth:     50,
+			expectName:   "link",
+			expectTarget: "/tmp/target",
+		},
+		{
+			name:         "truncate target tail",
+			linkName:     "link",
+			target:       "/a/very/long/path/to/target",
+			maxWidth:     14,
+			expectName:   "link",
+			expectTarget: "…arget",
+		},
+		{
+			name:         "truncate both name and target",
+			linkName:     "verylonglinkname",
+			target:       "/a/very/long/path/to/target",
+			maxWidth:     10,
+			expectName:   "v…e",
+			expectTarget: "…et",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			name, target := truncateSymlinkParts(tt.linkName, tt.target, tt.maxWidth)
+			if name != tt.expectName || target != tt.expectTarget {
+				t.Errorf("truncateSymlinkParts(%q, %q, %d) = (%q, %q), want (%q, %q)", tt.linkName, tt.target, tt.maxWidth, name, target, tt.expectName, tt.expectTarget)
+			}
+		})
+	}
+}
+
 func TestFormatPermissions(t *testing.T) {
 	tests := []struct {
 		name     string

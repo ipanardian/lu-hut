@@ -87,8 +87,114 @@ func lookupMin(mins []int, idx int, fallback int) int {
 	return fallback
 }
 
-func formatName(file model.FileEntry) string {
-	name := file.Name
+func runeCount(s string) int {
+	return utf8.RuneCountInString(s)
+}
+
+func truncateMiddle(s string, max int) string {
+	if max <= 0 {
+		return ""
+	}
+	if runeCount(s) <= max {
+		return s
+	}
+	if max == 1 {
+		return "…"
+	}
+
+	runes := []rune(s)
+	head := (max - 1) / 2
+	tail := max - 1 - head
+	if head < 1 {
+		head = 1
+		tail = max - 1
+	}
+	if tail < 1 {
+		tail = 1
+		head = max - 1
+	}
+
+	return string(runes[:head]) + "…" + string(runes[len(runes)-tail:])
+}
+
+func truncateTail(s string, max int) string {
+	if max <= 0 {
+		return ""
+	}
+	if runeCount(s) <= max {
+		return s
+	}
+	if max == 1 {
+		return "…"
+	}
+
+	runes := []rune(s)
+	return "…" + string(runes[len(runes)-(max-1):])
+}
+
+const defaultNameMaxWidth = 50
+
+func truncateSymlinkParts(name, target string, maxWidth int) (string, string) {
+	if maxWidth <= 0 {
+		return "", ""
+	}
+
+	arrowLen := runeCount(" -> ")
+	if runeCount(name)+arrowLen+runeCount(target) <= maxWidth {
+		return name, target
+	}
+
+	if maxWidth <= arrowLen+1 {
+		return truncateMiddle(name, maxWidth), ""
+	}
+
+	targetBudget := maxWidth - arrowLen - runeCount(name)
+	if targetBudget >= 2 {
+		return name, truncateTail(target, targetBudget)
+	}
+
+	remaining := maxWidth - arrowLen
+	if remaining <= 1 {
+		return truncateMiddle(name, maxWidth), ""
+	}
+
+	minTarget := 2
+	targetBudget = remaining / 2
+	if targetBudget < minTarget {
+		targetBudget = minTarget
+	}
+	if targetBudget > remaining-1 {
+		targetBudget = remaining - 1
+	}
+
+	nameBudget := remaining - targetBudget
+	if nameBudget < 1 {
+		nameBudget = 1
+		targetBudget = remaining - nameBudget
+	}
+
+	return truncateMiddle(name, nameBudget), truncateTail(target, targetBudget)
+}
+
+func formatName(file model.FileEntry, maxWidth int) string {
+	originalName := file.Name
+	name := originalName
+	if maxWidth <= 0 {
+		maxWidth = defaultNameMaxWidth
+	}
+
+	if file.Mode&fs.ModeSymlink != 0 {
+		if target, err := os.Readlink(file.Path); err == nil {
+			truncName, truncTarget := truncateSymlinkParts(name, target, maxWidth)
+			if truncTarget == "" {
+				return color.New(color.FgMagenta, color.Bold).Sprint(truncName)
+			}
+			return color.New(color.FgMagenta, color.Bold).Sprint(truncName) + " -> " + color.New(color.FgHiBlack).Sprint(truncTarget)
+		}
+		return color.New(color.FgMagenta, color.Bold).Sprint(truncateMiddle(name, maxWidth))
+	}
+
+	name = truncateMiddle(name, maxWidth)
 
 	if file.IsDir {
 		return color.New(color.FgBlue, color.Bold).Sprint(name)
@@ -102,7 +208,7 @@ func formatName(file model.FileEntry) string {
 		return color.New(color.FgYellow).Sprint(name)
 	}
 
-	ext := strings.ToLower(filepath.Ext(name))
+	ext := strings.ToLower(filepath.Ext(originalName))
 	switch ext {
 	case ".go", ".rs", ".py", ".js", ".ts", ".jsx", ".tsx":
 		return color.New(color.FgGreen).Sprint(name)

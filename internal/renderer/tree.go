@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fatih/color"
 	"github.com/ipanardian/lu-hut/internal/config"
 	"github.com/ipanardian/lu-hut/internal/filter"
 	"github.com/ipanardian/lu-hut/internal/git"
@@ -135,10 +134,24 @@ func (r *Tree) renderTreeRecursive(path string, prefix string, _ bool, level int
 		}
 
 		line := prefix + connector
+		nameWidth := getTerminalWidth()
+		if nameWidth <= 0 {
+			nameWidth = defaultNameMaxWidth
+		}
+		prefixWidth := runeCount(stripANSI(line))
+		nameWidth -= prefixWidth
+		if nameWidth <= 0 {
+			nameWidth = defaultNameMaxWidth
+		}
+
 		if file.IsDir {
-			line += color.New(color.FgBlue, color.Bold).Sprint(file.Name) + "/"
+			dirWidth := nameWidth
+			if dirWidth > 1 {
+				dirWidth--
+			}
+			line += formatName(file, dirWidth) + "/"
 		} else {
-			line += formatName(file)
+			line += formatName(file, nameWidth)
 		}
 
 		if r.config.ShowGit && r.gitRepo != nil {

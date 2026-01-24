@@ -48,6 +48,7 @@ func TestFormatPermissions(t *testing.T) {
 	tests := []struct {
 		name     string
 		mode     fs.FileMode
+		useOctal bool
 		expected string
 	}{
 		{
@@ -65,13 +66,31 @@ func TestFormatPermissions(t *testing.T) {
 			mode:     0o755,
 			expected: "-rwxr-xr-x",
 		},
+		{
+			name:     "directory octal",
+			mode:     fs.ModeDir | 0o755,
+			useOctal: true,
+			expected: "0755",
+		},
+		{
+			name:     "regular file octal",
+			mode:     0o644,
+			useOctal: true,
+			expected: "0644",
+		},
+		{
+			name:     "executable octal",
+			mode:     0o755,
+			useOctal: true,
+			expected: "0755",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := formatPermissions(tt.mode)
+			result := formatPermissions(tt.mode, tt.useOctal)
 			if result != tt.expected {
-				t.Errorf("formatPermissions(%o) = %q, want %q", tt.mode, result, tt.expected)
+				t.Errorf("formatPermissions(%o, %v) = %q, want %q", tt.mode, tt.useOctal, result, tt.expected)
 			}
 		})
 	}

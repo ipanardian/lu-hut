@@ -85,7 +85,7 @@ func (r *Table) buildTableData(files []model.FileEntry, now time.Time) [][]strin
 			formatName(file),
 			formatSize(file.Size, file.IsDir),
 			formatModified(file.ModTime, now, r.config.ShowExactTime),
-			formatPermissions(file.Mode),
+			formatPermissions(file.Mode, r.config.ShowOctal),
 		}
 		if r.config.ShowGit {
 			row = append(row, formatGitStatus(file.GitStatus))

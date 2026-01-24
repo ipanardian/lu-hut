@@ -89,6 +89,9 @@ $ lu -Sr
 # Show exact modification time
 $ lu -T
 
+# Show octal permissions
+$ lu -o
+
 # Combine exact time with git status
 $ lu -Tg
 
@@ -130,6 +133,7 @@ $ lu -hut
 | **-h** | `--hidden`         | Include hidden files in the listing.                 |
 | **-u** | `--user`           | Show User and Group ownership metadata.              |
 | **-T** | `--exact-time`     | Show exact modification time instead of relative.    |
+| **-o** | `--octal`          | Show octal permissions instead of rwx.               |
 | **-F** | `--tree`           | Display directory structure in a tree format.        |
 | **-R** | `--recursive`      | List subdirectories recursively.                     |
 | **-L** | `--max-depth`      | Maximum recursion depth (0 = no limit, default: 30). |

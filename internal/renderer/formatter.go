@@ -179,8 +179,12 @@ func formatModified(t time.Time, now time.Time, showExact bool) string {
 	return c.Sprint(text)
 }
 
-func formatPermissions(mode fs.FileMode) string {
+func formatPermissions(mode fs.FileMode, useOctal bool) string {
 	perm := mode.Perm()
+
+	if useOctal {
+		return color.New(color.FgHiWhite).Sprint(fmt.Sprintf("%04o", perm))
+	}
 
 	var result strings.Builder
 

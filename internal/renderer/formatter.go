@@ -159,13 +159,7 @@ func truncateSymlinkParts(name, target string, maxWidth int) (string, string) {
 	}
 
 	minTarget := 2
-	targetBudget = remaining / 2
-	if targetBudget < minTarget {
-		targetBudget = minTarget
-	}
-	if targetBudget > remaining-1 {
-		targetBudget = remaining - 1
-	}
+	targetBudget = min(max(remaining/2, minTarget), remaining-1)
 
 	nameBudget := remaining - targetBudget
 	if nameBudget < 1 {

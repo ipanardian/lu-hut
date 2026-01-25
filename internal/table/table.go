@@ -155,39 +155,55 @@ func (t *Table) Print() {
 }
 
 func (t *Table) printTopBorder(bc borderChars) {
-	line := bc.topLeft
+	var line strings.Builder
+	line.WriteString(bc.topLeft)
 	for i := range t.columnWidths {
-		line += strings.Repeat(bc.horizontal, t.columnWidths[i]+2)
+		line.WriteString(strings.Repeat(bc.horizontal, t.columnWidths[i]+2))
 		if i < len(t.columnWidths)-1 {
-			line += bc.topTee
+			line.WriteString(bc.topTee)
 		}
 	}
-	line += bc.topRight
-	t.printColored(line, t.borderColor)
+	line.WriteString(bc.topRight)
+	t.printColored(line.String(), t.borderColor)
 }
 
 func (t *Table) printBottomBorder(bc borderChars) {
-	line := bc.bottomLeft
+	var line strings.Builder
+	line.WriteString(bc.bottomLeft)
 	for i := range t.columnWidths {
-		line += strings.Repeat(bc.horizontal, t.columnWidths[i]+2)
+		line.WriteString(strings.Repeat(bc.horizontal, t.columnWidths[i]+2))
 		if i < len(t.columnWidths)-1 {
-			line += bc.bottomTee
+			line.WriteString(bc.bottomTee)
 		}
 	}
-	line += bc.bottomRight
-	t.printColored(line, t.borderColor)
+	line.WriteString(bc.bottomRight)
+	t.printColored(line.String(), t.borderColor)
 }
 
 func (t *Table) printSeparator(bc borderChars) {
-	line := bc.leftTee
+	var line strings.Builder
+	line.WriteString(bc.leftTee)
 	for i := range t.columnWidths {
-		line += strings.Repeat(bc.horizontal, t.columnWidths[i]+2)
+		line.WriteString(strings.Repeat(bc.horizontal, t.columnWidths[i]+2))
 		if i < len(t.columnWidths)-1 {
-			line += bc.middle
+			line.WriteString(bc.middle)
 		}
 	}
-	line += bc.rightTee
-	t.printColored(line, t.borderColor)
+	line.WriteString(bc.rightTee)
+	t.printColored(line.String(), t.borderColor)
+}
+
+func (t *Table) printHeader(bc borderChars) {
+	var line strings.Builder
+	line.WriteString(bc.topLeft)
+	for i := range t.columnWidths {
+		line.WriteString(strings.Repeat(bc.horizontal, t.columnWidths[i]+2))
+		if i < len(t.columnWidths)-1 {
+			line.WriteString(bc.topTee)
+		}
+	}
+	line.WriteString(bc.topRight)
+	t.printColored(line.String(), t.borderColor)
 }
 
 func (t *Table) calculateColumnWidths() {

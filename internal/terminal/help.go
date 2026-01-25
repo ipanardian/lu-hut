@@ -37,6 +37,7 @@ func ShowColoredHelp(_ *cobra.Command) {
 		{"-L, --max-depth", "maximum recursion depth (0 = no limit, default: 30)"},
 		{"-i, --include", "include files matching glob patterns (quote the pattern)"},
 		{"-x, --exclude", "exclude files matching glob patterns (quote the pattern)"},
+		{"-o, --octal", "show file permissions in octal format"},
 		{"--help", "show this help message"},
 	}
 

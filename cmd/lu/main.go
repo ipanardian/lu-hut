@@ -38,7 +38,8 @@ func newRootCommand() *cobra.Command {
 
 GitHub: https://github.com/ipanardian/lu-hut
 Version: ` + constants.Version,
-		Args: cobra.MaximumNArgs(1),
+		Args:    cobra.MaximumNArgs(1),
+		Version: constants.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			path := "."
 			if len(args) > 0 {

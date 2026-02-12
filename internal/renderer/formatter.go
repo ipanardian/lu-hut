@@ -309,6 +309,7 @@ func formatPermissions(mode fs.FileMode, useOctal bool) string {
 
 	for i := 8; i >= 0; i-- {
 		bit := perm >> uint(i) & 1
+		group := (8 - i) / 3
 		var c *color.Color
 
 		switch (8 - i) % 3 {
@@ -329,20 +330,37 @@ func formatPermissions(mode fs.FileMode, useOctal bool) string {
 				result.WriteString(c.Sprint("-"))
 			}
 		case 2:
-			if bit == 1 {
-				if mode&fs.ModeSetuid != 0 {
-					c = color.New(color.FgMagenta, color.Bold)
-					result.WriteString(c.Sprint("s"))
-				} else if mode&fs.ModeSetgid != 0 {
-					c = color.New(color.FgMagenta, color.Bold)
-					result.WriteString(c.Sprint("s"))
-				} else if mode&fs.ModeSticky != 0 {
-					c = color.New(color.FgRed, color.Bold)
-					result.WriteString(c.Sprint("t"))
+			hasSpecial := false
+			switch group {
+			case 0:
+				hasSpecial = mode&fs.ModeSetuid != 0
+			case 1:
+				hasSpecial = mode&fs.ModeSetgid != 0
+			case 2:
+				hasSpecial = mode&fs.ModeSticky != 0
+			}
+
+			if hasSpecial {
+				if group == 2 {
+					if bit == 1 {
+						c = color.New(color.FgRed, color.Bold)
+						result.WriteString(c.Sprint("t"))
+					} else {
+						c = color.New(color.FgRed, color.Bold)
+						result.WriteString(c.Sprint("T"))
+					}
 				} else {
-					c = color.New(color.FgRed, color.Bold)
-					result.WriteString(c.Sprint("x"))
+					if bit == 1 {
+						c = color.New(color.FgMagenta, color.Bold)
+						result.WriteString(c.Sprint("s"))
+					} else {
+						c = color.New(color.FgMagenta, color.Bold)
+						result.WriteString(c.Sprint("S"))
+					}
 				}
+			} else if bit == 1 {
+				c = color.New(color.FgRed, color.Bold)
+				result.WriteString(c.Sprint("x"))
 			} else {
 				c = color.New(color.FgHiBlack)
 				result.WriteString(c.Sprint("-"))

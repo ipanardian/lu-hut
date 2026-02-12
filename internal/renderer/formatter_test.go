@@ -203,6 +203,31 @@ func TestFormatPermissions(t *testing.T) {
 			useOctal: true,
 			expected: "0755",
 		},
+		{
+			name:     "setuid executable",
+			mode:     fs.ModeSetuid | 0o4755,
+			expected: "-rwsr-xr-x",
+		},
+		{
+			name:     "setgid executable",
+			mode:     fs.ModeSetgid | 0o2755,
+			expected: "-rwxr-sr-x",
+		},
+		{
+			name:     "sticky directory",
+			mode:     fs.ModeDir | fs.ModeSticky | 0o1755,
+			expected: "drwxr-xr-t",
+		},
+		{
+			name:     "setuid no execute",
+			mode:     fs.ModeSetuid | 0o4644,
+			expected: "-rwSr--r--",
+		},
+		{
+			name:     "sticky no execute",
+			mode:     fs.ModeDir | fs.ModeSticky | 0o1754,
+			expected: "drwxr-xr-T",
+		},
 	}
 
 	for _, tt := range tests {

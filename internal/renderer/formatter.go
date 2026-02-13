@@ -13,6 +13,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/ipanardian/lu-hut/internal/model"
+	"github.com/ipanardian/lu-hut/pkg/helper"
 	"golang.org/x/term"
 )
 
@@ -38,28 +39,6 @@ func getTerminalWidth() int {
 	return 70
 }
 
-func stripANSI(s string) string {
-	var result strings.Builder
-	i := 0
-	for i < len(s) {
-		if s[i] == '\x1b' {
-			j := i + 1
-			if j < len(s) && s[j] == '[' {
-				j++
-				for j < len(s) && (s[j] < 'a' || s[j] > 'z') && (s[j] < 'A' || s[j] > 'Z') {
-					j++
-				}
-				j++
-			}
-			i = j
-		} else {
-			result.WriteByte(s[i])
-			i++
-		}
-	}
-	return result.String()
-}
-
 func calculateDisplayWidths(data [][]string) []int {
 	if len(data) == 0 {
 		return nil
@@ -69,7 +48,7 @@ func calculateDisplayWidths(data [][]string) []int {
 
 	for _, row := range data {
 		for j, cell := range row {
-			displayText := stripANSI(cell)
+			displayText := helper.StripANSI(cell)
 			width := utf8.RuneCountInString(displayText)
 			if width > widths[j] {
 				widths[j] = width

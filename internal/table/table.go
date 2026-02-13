@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/fatih/color"
+	"github.com/ipanardian/lu-hut/pkg/helper"
 )
 
 const (
@@ -233,28 +234,6 @@ func (t *Table) printColored(text string, c *color.Color) {
 	}
 }
 
-func stripANSI(s string) string {
-	var result strings.Builder
-	i := 0
-	for i < len(s) {
-		if s[i] == '\x1b' {
-			j := i + 1
-			if j < len(s) && s[j] == '[' {
-				j++
-				for j < len(s) && (s[j] < 'a' || s[j] > 'z') && (s[j] < 'A' || s[j] > 'Z') {
-					j++
-				}
-				j++
-			}
-			i = j
-		} else {
-			result.WriteByte(s[i])
-			i++
-		}
-	}
-	return result.String()
-}
-
 func (t *Table) printRow(rowIndex int, bc borderChars, isHeader bool) {
 	row := t.data[rowIndex]
 
@@ -269,13 +248,13 @@ func (t *Table) printRow(rowIndex int, bc borderChars, isHeader bool) {
 		if i < len(row) {
 			cell = row[i]
 		}
-		cellWidth := utf8.RuneCountInString(stripANSI(cell))
+		cellWidth := utf8.RuneCountInString(helper.StripANSI(cell))
 		maxWidth := t.columnWidths[i]
 
 		var cellContent string
 		if cellWidth > maxWidth {
 			truncated := truncateString(cell, maxWidth)
-			truncatedWidth := min(utf8.RuneCountInString(stripANSI(truncated)), maxWidth)
+			truncatedWidth := min(utf8.RuneCountInString(helper.StripANSI(truncated)), maxWidth)
 			padding := max(maxWidth-truncatedWidth, 0)
 			cellContent = " " + truncated + strings.Repeat(" ", padding) + " "
 		} else {
@@ -316,7 +295,7 @@ func truncateString(s string, maxLen int) string {
 		return ""
 	}
 
-	plain := stripANSI(s)
+	plain := helper.StripANSI(s)
 	runes := []rune(plain)
 	if len(runes) <= maxLen {
 		return s

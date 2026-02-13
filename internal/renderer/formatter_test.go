@@ -4,6 +4,8 @@ import (
 	"io/fs"
 	"testing"
 	"time"
+
+	"github.com/ipanardian/lu-hut/pkg/helper"
 )
 
 func TestCalculateDisplayWidths(t *testing.T) {
@@ -308,9 +310,9 @@ func TestStripANSI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := stripANSI(tt.input)
+			result := helper.StripANSI(tt.input)
 			if result != tt.expected {
-				t.Errorf("stripANSI(%q) = %q, want %q", tt.input, result, tt.expected)
+				t.Errorf("StripANSI(%q) = %q, want %q", tt.input, result, tt.expected)
 			}
 		})
 	}

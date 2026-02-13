@@ -14,6 +14,7 @@ import (
 	"github.com/ipanardian/lu-hut/internal/git"
 	"github.com/ipanardian/lu-hut/internal/model"
 	"github.com/ipanardian/lu-hut/internal/sort"
+	"github.com/ipanardian/lu-hut/pkg/helper"
 )
 
 type Tree struct {
@@ -156,7 +157,7 @@ func (r *Tree) renderTreeRecursive(ctx context.Context, path string, prefix stri
 		if nameWidth <= 0 {
 			nameWidth = defaultNameMaxWidth
 		}
-		prefixWidth := runeCount(stripANSI(line))
+		prefixWidth := runeCount(helper.StripANSI(line))
 		nameWidth -= prefixWidth
 		if nameWidth <= 0 {
 			nameWidth = defaultNameMaxWidth

@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/ipanardian/lu-hut/internal/config"
 	"github.com/ipanardian/lu-hut/internal/filter"
 	"github.com/ipanardian/lu-hut/internal/git"
@@ -28,6 +29,13 @@ type Lister struct {
 }
 
 func New(cfg config.Config) *Lister {
+	switch cfg.ColorMode {
+	case "never":
+		color.NoColor = true
+	case "always":
+		color.NoColor = false
+	}
+
 	filter := filter.NewFilter(cfg.IncludePatterns, cfg.ExcludePatterns)
 
 	var sortStrat sort.Strategy

@@ -16,6 +16,7 @@ type Config struct {
 	Recursive       bool
 	Tree            bool
 	MaxDepth        int
+	ColorMode       string
 	IncludePatterns []string
 	ExcludePatterns []string
 }
@@ -29,6 +30,9 @@ func NewDefaultConfig() Config {
 func (c Config) Validate() error {
 	if c.MaxDepth < 0 {
 		return fmt.Errorf("max depth cannot be negative")
+	}
+	if c.ColorMode != "" && c.ColorMode != "always" && c.ColorMode != "auto" && c.ColorMode != "never" {
+		return fmt.Errorf("invalid color mode: %s (must be always, auto, or never)", c.ColorMode)
 	}
 	return nil
 }

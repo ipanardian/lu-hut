@@ -64,7 +64,7 @@ Version: ` + constants.Version,
 		},
 	}
 
-	rootCmd.Flags().BoolP("help", "", false, "help for lu")
+	rootCmd.Flags().StringVar(&cfg.ColorMode, "color", "", "color output mode (always|auto|never)")
 	rootCmd.Flags().BoolVarP(&cfg.SortModified, "sort-modified", "t", false, "sort by modified time (newest first)")
 	rootCmd.Flags().BoolVarP(&cfg.SortSize, "sort-size", "S", false, "sort by file size (largest first)")
 	rootCmd.Flags().BoolVarP(&cfg.SortExtension, "sort-extension", "X", false, "sort by file extension")
@@ -79,6 +79,9 @@ Version: ` + constants.Version,
 	rootCmd.Flags().IntVarP(&cfg.MaxDepth, "max-depth", "L", cfg.MaxDepth, "maximum recursion depth (0 = no limit, default: 30)")
 	rootCmd.Flags().StringSliceVarP(&cfg.IncludePatterns, "include", "i", nil, "include files matching glob patterns (quote the pattern)")
 	rootCmd.Flags().StringSliceVarP(&cfg.ExcludePatterns, "exclude", "x", nil, "exclude files matching glob patterns (quote the pattern)")
+
+	var help bool
+	rootCmd.Flags().BoolVar(&help, "help", false, "help for lu")
 	rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
 		terminal.ShowColoredHelp(cmd)
 	})

@@ -177,8 +177,12 @@ func (d *Lister) listRecursive(ctx context.Context, rootPath string) error {
 
 		for _, file := range files {
 			if file.IsDir {
+				nextLevel := current.level + 1
+				if maxDepth > 0 && nextLevel >= maxDepth {
+					continue
+				}
 				dirPath := filepath.Join(current.path, file.Name)
-				dirs = append(dirs, dirEntry{path: dirPath, level: current.level + 1})
+				dirs = append(dirs, dirEntry{path: dirPath, level: nextLevel})
 			}
 		}
 	}
@@ -192,6 +196,7 @@ func (d *Lister) collectFiles(path string, entries []fs.DirEntry) []model.FileEn
 	for _, entry := range entries {
 		info, err := entry.Info()
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: cannot read %s: %v\n", entry.Name(), err)
 			continue
 		}
 

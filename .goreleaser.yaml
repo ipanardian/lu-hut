@@ -47,7 +47,7 @@ changelog:
       - Merge pull request
       - Merge branch
 
-homebrew_casks:
+brews:
   - name: lu-hut
     ids:
       - lu-archive
@@ -55,7 +55,11 @@ homebrew_casks:
       owner: ipanardian
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Formula
     homepage: https://github.com/ipanardian/lu-hut
     description: "A powerful modern alternative to the Unix ls command"
     license: GPL-3.0
-    binaries: [lu]
+    install: |
+      bin.install "lu"
+    test: |
+      system "#{bin}/lu", "version"

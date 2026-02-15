@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/ipanardian/lu-hut/internal/constants"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 const (
@@ -108,14 +110,26 @@ func GetBinaryName() string {
 	return fmt.Sprintf("lu-%s-%s", osName, arch)
 }
 
+func GetArchiveName(version string) string {
+	osName := cases.Title(language.Und).String(runtime.GOOS)
+	arch := runtime.GOARCH
+
+	if arch == "amd64" {
+		arch = "x86_64"
+	}
+
+	version = strings.TrimPrefix(version, "v")
+	return fmt.Sprintf("lu-hut_%s_%s_%s.tar.gz", version, osName, arch)
+}
+
 func FindAssetURL(release *GitHubRelease) (string, error) {
-	binaryName := GetBinaryName()
+	archiveName := GetArchiveName(release.TagName)
 
 	for _, asset := range release.Assets {
-		if asset.Name == binaryName {
+		if asset.Name == archiveName {
 			return asset.BrowserDownloadURL, nil
 		}
 	}
 
-	return "", fmt.Errorf("no binary found for %s", binaryName)
+	return "", fmt.Errorf("no archive found for %s (looking for %s)", runtime.GOOS+"/"+runtime.GOARCH, archiveName)
 }

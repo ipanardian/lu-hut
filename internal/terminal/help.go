@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func ShowColoredHelp(_ *cobra.Command) {
+func ShowColoredHelp(cmd *cobra.Command) {
 	fmt.Printf("\n%s %s\n\n",
 		color.New(color.FgCyan, color.Bold).Sprint("lu-hut "+constants.Version),
 		color.New(color.FgHiWhite).Sprint("- a modern alternative to the Unix ls command with box-drawn tables, tree-view, colors, filtering, sorting and git integration"),
@@ -17,7 +17,25 @@ func ShowColoredHelp(_ *cobra.Command) {
 	fmt.Printf("%s\n\n", color.New(color.FgHiBlack).Sprint("GitHub: https://github.com/ipanardian/lu-hut"))
 
 	fmt.Printf("%s\n\n", color.New(color.FgWhite).Sprint("USAGE:"))
-	fmt.Printf("  lu [path] [flags]\n\n")
+	fmt.Printf("  lu [path] [flags]\n")
+	fmt.Printf("  lu [command]\n\n")
+
+	fmt.Printf("%s\n", color.New(color.FgWhite, color.Bold).Sprint("COMMANDS:"))
+	commands := []struct {
+		cmd, desc string
+	}{
+		{"update", "update lu to the latest version"},
+		{"version", "show version information"},
+		{"help", "show this help message"},
+	}
+
+	for _, c := range commands {
+		fmt.Printf("  %s\t%s\n",
+			color.New(color.FgYellow, color.Bold).Sprintf("%-15s", c.cmd),
+			color.New(color.FgHiWhite).Sprint(c.desc),
+		)
+	}
+	fmt.Println()
 
 	fmt.Printf("%s\n", color.New(color.FgWhite, color.Bold).Sprint("FLAGS:"))
 
@@ -38,7 +56,6 @@ func ShowColoredHelp(_ *cobra.Command) {
 		{"-i, --include", "include files matching glob patterns (quote the pattern)"},
 		{"-x, --exclude", "exclude files matching glob patterns (quote the pattern)"},
 		{"-o, --octal", "show file permissions in octal format"},
-		{"--help", "show this help message"},
 	}
 
 	for _, f := range flags {
@@ -59,6 +76,11 @@ func ShowColoredHelp(_ *cobra.Command) {
 		"lu -i '*.go'",
 		"lu -x '*.tambang'",
 		"lu -hut (Lord's mode)",
+		"",
+		"lu help",
+		"lu version",
+		"lu version --check",
+		"lu update",
 	}
 
 	for _, ex := range examples {

@@ -188,7 +188,9 @@ func (r *Tree) renderTreeRecursive(ctx context.Context, path string, prefix stri
 			} else {
 				newPrefix += "│   "
 			}
-			r.renderTreeRecursive(ctx, file.Path, newPrefix, true, level+1, now)
+			if err := r.renderTreeRecursive(ctx, file.Path, newPrefix, true, level+1, now); err != nil {
+				continue
+			}
 		}
 	}
 
@@ -198,7 +200,7 @@ func (r *Tree) renderTreeRecursive(ctx context.Context, path string, prefix stri
 func (r *Tree) hasMatchingDescendants(ctx context.Context, dirPath string) bool {
 	var result bool
 
-	filepath.WalkDir(dirPath, func(path string, d os.DirEntry, err error) error {
+	if err := filepath.WalkDir(dirPath, func(path string, d os.DirEntry, err error) error {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
@@ -226,7 +228,9 @@ func (r *Tree) hasMatchingDescendants(ctx context.Context, dirPath string) bool 
 		}
 
 		return nil
-	})
+	}); err != nil {
+		return false
+	}
 
 	if ctx.Err() != nil {
 		return false

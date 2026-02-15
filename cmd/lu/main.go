@@ -19,10 +19,13 @@ import (
 	"github.com/ipanardian/lu-hut/internal/constants"
 	"github.com/ipanardian/lu-hut/internal/lister"
 	"github.com/ipanardian/lu-hut/internal/terminal"
+	"github.com/ipanardian/lu-hut/internal/updater"
 	"github.com/spf13/cobra"
 )
 
 func main() {
+	go updater.CheckAndNotify()
+
 	if err := newRootCommand().Execute(); err != nil {
 		log.Fatal(err)
 	}
@@ -85,6 +88,9 @@ Version: ` + constants.Version,
 	rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
 		terminal.ShowColoredHelp(cmd)
 	})
+
+	rootCmd.AddCommand(newUpdateCommand())
+	rootCmd.AddCommand(newVersionCommand())
 
 	return rootCmd
 }

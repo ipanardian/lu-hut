@@ -194,19 +194,6 @@ func (t *Table) printSeparator(bc borderChars) {
 	t.printColored(line.String(), t.borderColor)
 }
 
-func (t *Table) printHeader(bc borderChars) {
-	var line strings.Builder
-	line.WriteString(bc.topLeft)
-	for i := range t.columnWidths {
-		line.WriteString(strings.Repeat(bc.horizontal, t.columnWidths[i]+2))
-		if i < len(t.columnWidths)-1 {
-			line.WriteString(bc.topTee)
-		}
-	}
-	line.WriteString(bc.topRight)
-	t.printColored(line.String(), t.borderColor)
-}
-
 func (t *Table) calculateColumnWidths() {
 	if len(t.data) == 0 {
 		return

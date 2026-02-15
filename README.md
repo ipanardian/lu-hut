@@ -49,9 +49,18 @@
 
 ### Homebrew (Recommended for macOS)
 
+**Install:**
+
 ```bash
 brew tap ipanardian/tap
 brew install lu-hut
+```
+
+**Upgrade to latest version:**
+
+```bash
+brew update
+brew upgrade lu-hut
 ```
 
 ### Quick Install Script

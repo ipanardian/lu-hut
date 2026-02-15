@@ -1,11 +1,14 @@
 package updater
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/fatih/color"
@@ -13,7 +16,27 @@ import (
 
 const downloadTimeout = 5 * time.Minute
 
+func IsHomebrewInstallation() bool {
+	execPath, err := os.Executable()
+	if err != nil {
+		return false
+	}
+
+	execPath, _ = filepath.EvalSymlinks(execPath)
+
+	return strings.Contains(execPath, "/Cellar/") ||
+		strings.Contains(execPath, "homebrew") ||
+		strings.Contains(execPath, "/opt/homebrew/") ||
+		strings.Contains(execPath, "/usr/local/Cellar/")
+}
+
 func PerformUpdate(release *GitHubRelease) error {
+	if IsHomebrewInstallation() {
+		color.Yellow("⚠ lu-hut was installed via Homebrew")
+		color.Cyan("→ Please use 'brew upgrade lu-hut' to update")
+		return nil
+	}
+
 	downloadURL, err := FindAssetURL(release)
 	if err != nil {
 		return err
@@ -29,13 +52,6 @@ func PerformUpdate(release *GitHubRelease) error {
 		return fmt.Errorf("failed to resolve symlinks: %w", err)
 	}
 
-	tmpFile, err := os.CreateTemp("", "lu-update-*")
-	if err != nil {
-		return fmt.Errorf("failed to create temp file: %w", err)
-	}
-	tmpPath := tmpFile.Name()
-	defer os.Remove(tmpPath)
-
 	color.Cyan("Downloading %s...", release.TagName)
 
 	client := &http.Client{
@@ -44,26 +60,59 @@ func PerformUpdate(release *GitHubRelease) error {
 
 	resp, err := client.Get(downloadURL)
 	if err != nil {
-		tmpFile.Close()
-		return fmt.Errorf("failed to download binary: %w", err)
+		return fmt.Errorf("failed to download archive: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		tmpFile.Close()
 		return fmt.Errorf("download failed with status %d", resp.StatusCode)
 	}
 
-	written, err := io.Copy(tmpFile, resp.Body)
+	color.Cyan("Extracting binary...")
+
+	gzr, err := gzip.NewReader(resp.Body)
 	if err != nil {
+		return fmt.Errorf("failed to create gzip reader: %w", err)
+	}
+	defer gzr.Close()
+
+	tr := tar.NewReader(gzr)
+
+	var binaryData []byte
+	for {
+		header, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("failed to read tar: %w", err)
+		}
+
+		if header.Name == "lu" {
+			binaryData, err = io.ReadAll(tr)
+			if err != nil {
+				return fmt.Errorf("failed to read binary from archive: %w", err)
+			}
+			break
+		}
+	}
+
+	if len(binaryData) == 0 {
+		return fmt.Errorf("binary 'lu' not found in archive")
+	}
+
+	tmpFile, err := os.CreateTemp("", "lu-update-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	tmpPath := tmpFile.Name()
+	defer os.Remove(tmpPath)
+
+	if _, err := tmpFile.Write(binaryData); err != nil {
 		tmpFile.Close()
 		return fmt.Errorf("failed to write binary: %w", err)
 	}
 	tmpFile.Close()
-
-	if written == 0 {
-		return fmt.Errorf("downloaded file is empty")
-	}
 
 	if err := os.Chmod(tmpPath, 0755); err != nil {
 		return fmt.Errorf("failed to set executable permissions: %w", err)
@@ -87,6 +136,13 @@ func PerformUpdate(release *GitHubRelease) error {
 }
 
 func PerformRollback() error {
+	if IsHomebrewInstallation() {
+		color.Yellow("⚠ lu-hut was installed via Homebrew")
+		color.Cyan("→ Rollback is not supported for Homebrew installations")
+		color.Cyan("→ Use 'brew install lu-hut@<version>' to install a specific version")
+		return nil
+	}
+
 	execPath, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("failed to get executable path: %w", err)
@@ -143,9 +199,16 @@ func CheckAndNotify() {
 			yellow("⚠"),
 			cyan(release.TagName),
 			currentVersion)
-		fmt.Fprintf(os.Stderr, "%s Run %s to upgrade\n\n",
-			yellow("→"),
-			cyan("lu update"))
+
+		if IsHomebrewInstallation() {
+			fmt.Fprintf(os.Stderr, "%s Run %s to upgrade\n\n",
+				yellow("→"),
+				cyan("brew upgrade lu-hut"))
+		} else {
+			fmt.Fprintf(os.Stderr, "%s Run %s to upgrade\n\n",
+				yellow("→"),
+				cyan("lu update"))
+		}
 	}
 }
 

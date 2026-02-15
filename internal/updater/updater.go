@@ -81,9 +81,43 @@ func PerformUpdate(release *GitHubRelease) error {
 		return fmt.Errorf("failed to replace binary: %w", err)
 	}
 
-	_ = os.Remove(backupPath)
-
 	color.Green("✓ Successfully updated to %s", release.TagName)
+	color.Yellow("→ Previous version backed up (use 'lu rollback' to restore)")
+	return nil
+}
+
+func PerformRollback() error {
+	execPath, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("failed to get executable path: %w", err)
+	}
+
+	execPath, err = filepath.EvalSymlinks(execPath)
+	if err != nil {
+		return fmt.Errorf("failed to resolve symlinks: %w", err)
+	}
+
+	backupPath := execPath + ".backup"
+
+	if _, err := os.Stat(backupPath); os.IsNotExist(err) {
+		return fmt.Errorf("no backup found at %s", backupPath)
+	}
+
+	tmpPath := execPath + ".tmp"
+	if err := os.Rename(execPath, tmpPath); err != nil {
+		return fmt.Errorf("failed to backup current binary: %w", err)
+	}
+
+	if err := os.Rename(backupPath, execPath); err != nil {
+		if restoreErr := os.Rename(tmpPath, execPath); restoreErr != nil {
+			return fmt.Errorf("failed to restore backup and rollback failed: %w", err)
+		}
+		return fmt.Errorf("failed to restore backup: %w", err)
+	}
+
+	_ = os.Remove(tmpPath)
+
+	color.Green("✓ Successfully rolled back to previous version")
 	return nil
 }
 

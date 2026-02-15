@@ -65,7 +65,7 @@ $ make install
 
 Ensure `~/bin` is included in your system `PATH` for seamless execution.
 
-## 🚀 Updating
+## 🚀 Updating & Rollback
 
 **Self-Update (Recommended):**
 
@@ -75,6 +75,9 @@ $ lu version --check
 
 # Update to the latest version
 $ lu update
+
+# Rollback to the previous version if needed
+$ lu rollback
 ```
 
 The update command will:
@@ -82,7 +85,21 @@ The update command will:
 - Check GitHub releases for the latest version
 - Download the appropriate binary for your system
 - Automatically replace the current binary
+- Create a backup of the previous version
 - Verify the installation
+
+**Rollback:**
+
+If you encounter issues after updating, you can easily rollback to the previous version:
+
+```bash
+$ lu rollback
+```
+
+The rollback command will:
+
+- Restore the previous version from backup
+- Verify the rollback was successful
 
 **Update Notifications:**
 
@@ -150,10 +167,11 @@ $ lu -hut
 
 ### Commands
 
-| Command      | Description                                      |
-| :----------- | :----------------------------------------------- |
-| `lu update`  | Update lu to the latest version                  |
-| `lu version` | Show version information (`-c` to check updates) |
+| Command       | Description                                      |
+| :------------ | :----------------------------------------------- |
+| `lu update`   | Update lu to the latest version                  |
+| `lu rollback` | Rollback to the previous version                 |
+| `lu version`  | Show version information (`-c` to check updates) |
 
 ### Flags
 

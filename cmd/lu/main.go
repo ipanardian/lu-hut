@@ -91,6 +91,7 @@ Version: ` + constants.Version,
 
 	rootCmd.AddCommand(newUpdateCommand())
 	rootCmd.AddCommand(newVersionCommand())
+	rootCmd.AddCommand(newRollbackCommand())
 
 	return rootCmd
 }

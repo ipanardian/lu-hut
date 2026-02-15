@@ -173,7 +173,7 @@ func (r *Tree) renderTreeRecursive(ctx context.Context, path string, prefix stri
 			line += formatName(file, nameWidth)
 		}
 
-		if r.config.ShowGit && r.gitRepo != nil {
+		if r.config.ShowGit && r.gitRepo != nil && !file.IsDir {
 			if status := r.gitRepo.GetStatus(file.Path); status != "" {
 				line += " " + formatGitStatus(status)
 			}

@@ -4,16 +4,14 @@ package git
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
-
-	"github.com/go-git/go-git/v5"
 )
 
 type Repository struct {
 	repoRoot     string
-	repo         *git.Repository
-	cachedStatus git.Status
+	statusCache  map[string]string
 	statusLoaded bool
 }
 
@@ -22,32 +20,81 @@ func NewRepository(path string) (*Repository, error) {
 	if err != nil {
 		return nil, err
 	}
-	repo, err := git.PlainOpen(root)
-	if err != nil {
-		return nil, err
-	}
-	return &Repository{repoRoot: root, repo: repo}, nil
+	return &Repository{
+		repoRoot:    root,
+		statusCache: make(map[string]string),
+	}, nil
 }
 
-func (g *Repository) loadStatus() error {
+func (g *Repository) loadAllStatus() error {
 	if g.statusLoaded {
 		return nil
 	}
-	worktree, err := g.repo.Worktree()
+
+	cmd := exec.Command("git", "-C", g.repoRoot, "status", "--porcelain")
+	output, err := cmd.Output()
 	if err != nil {
-		return fmt.Errorf("getting worktree: %w", err)
+		return err
 	}
-	status, err := worktree.Status()
-	if err != nil {
-		return fmt.Errorf("getting worktree status: %w", err)
+
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		if len(line) < 4 {
+			continue
+		}
+
+		staging := line[0]
+		worktree := line[1]
+		filePath := line[3:]
+
+		if staging == 'R' || staging == 'C' {
+			if idx := strings.Index(filePath, " -> "); idx != -1 {
+				filePath = filePath[idx+4:]
+			}
+		}
+
+		var status string
+		if worktree != ' ' && worktree != '?' {
+			switch worktree {
+			case 'M':
+				status = "M"
+			case 'D':
+				status = "D"
+			case 'A':
+				status = "A"
+			case 'R':
+				status = "R"
+			case 'C':
+				status = "C"
+			}
+		} else if staging != ' ' {
+			switch staging {
+			case 'A':
+				status = "A"
+			case 'M':
+				status = "M"
+			case 'D':
+				status = "D"
+			case 'R':
+				status = "R"
+			case 'C':
+				status = "C"
+			}
+		} else if worktree == '?' {
+			status = "?"
+		}
+
+		if status != "" {
+			g.statusCache[filePath] = status
+		}
 	}
-	g.cachedStatus = status
+
 	g.statusLoaded = true
 	return nil
 }
 
 func (g *Repository) GetStatus(filePath string) string {
-	if err := g.loadStatus(); err != nil {
+	if err := g.loadAllStatus(); err != nil {
 		return ""
 	}
 
@@ -61,50 +108,13 @@ func (g *Repository) GetStatus(filePath string) string {
 		return ""
 	}
 
-	fileStatus := g.cachedStatus.File(relPath)
+	relPath = filepath.ToSlash(relPath)
 
-	if fileStatus.Worktree == git.Untracked {
-		return "?"
+	if status, ok := g.statusCache[relPath]; ok {
+		return status
 	}
 
-	if fileStatus.Worktree == git.Unmodified && fileStatus.Staging == git.Unmodified {
-		return ""
-	}
-
-	var statusStr string
-	if fileStatus.Staging != git.Unmodified {
-		switch fileStatus.Staging {
-		case git.Added:
-			statusStr += "A"
-		case git.Modified:
-			statusStr += "M"
-		case git.Deleted:
-			statusStr += "D"
-		case git.Renamed:
-			statusStr += "R"
-		case git.Copied:
-			statusStr += "C"
-		}
-	} else {
-		statusStr += " "
-	}
-
-	if fileStatus.Worktree != git.Unmodified {
-		switch fileStatus.Worktree {
-		case git.Modified:
-			statusStr += "M"
-		case git.Deleted:
-			statusStr += "D"
-		case git.Added:
-			statusStr += "A"
-		}
-	}
-
-	if statusStr == " " || statusStr == "" {
-		return ""
-	}
-
-	return strings.TrimSpace(statusStr)
+	return ""
 }
 
 func findGitRoot(start string) (string, error) {

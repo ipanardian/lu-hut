@@ -34,6 +34,7 @@ func New(cfg config.Config) *Lister {
 		color.NoColor = true
 	case "always":
 		color.NoColor = false
+	case "auto":
 	}
 
 	filter := filter.NewFilter(cfg.IncludePatterns, cfg.ExcludePatterns)
@@ -218,7 +219,7 @@ func (d *Lister) collectFiles(path string, entries []fs.DirEntry) []model.FileEn
 			IsHidden: strings.HasPrefix(entry.Name(), "."),
 		}
 
-		if d.config.ShowGit && d.gitRepo != nil {
+		if d.config.ShowGit && d.gitRepo != nil && !file.IsDir {
 			file.GitStatus = d.gitRepo.GetStatus(file.Path)
 		}
 

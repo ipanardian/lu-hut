@@ -49,13 +49,14 @@ func ShowColoredHelp(cmd *cobra.Command) {
 		{"-g, --git", "show git status inline"},
 		{"-h, --hidden", "show hidden files"},
 		{"-u, --user", "show user and group ownership metadata."},
-		{"-T, --exact-time", "show exact modification time instead of relative"},
-		{"-F, --tree", "display directory structure in a tree format."},
+		{"-T, --tree", "display directory structure in a tree format."},
 		{"-R, --recursive", "list subdirectories recursively"},
 		{"-L, --max-depth", "maximum recursion depth (0 = no limit, default: 30)"},
 		{"-i, --include", "include files matching glob patterns (quote the pattern)"},
 		{"-x, --exclude", "exclude files matching glob patterns (quote the pattern)"},
 		{"-o, --octal", "show file permissions in octal format"},
+		{"--exact-time", "show exact modification time instead of relative"},
+		{"--color", "control color output (always|auto|never)"},
 	}
 
 	for _, f := range flags {

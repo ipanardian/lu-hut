@@ -17,10 +17,10 @@
 
 - **Beautiful Box-Drawn Tables** - Clean, box-drawn tables with colored borders for excellent readability.
 - **Hierarchical Directory Priority** - Folders are prioritized at the top of the list for structured navigation.
-- **Stunning Tree View Display (-F)** - Display directory structure in a beautiful tree format with all features supported. Tree view can be cancelled with `Ctrl+C`
+- **Stunning Tree View Display (-T)** - Display directory structure in a beautiful tree format with all features supported. Tree view can be cancelled with `Ctrl+C`
 - **Dynamic Git Monitoring (-g)** - Real-time tracking of file states (Untracked, Modified, Added) directly in the table.
 - **Time-Aware Color Grading (-t)** - Intelligent color schemes based on file age to quickly identify recent changes.
-- **Exact Time Display (-T)** - Show precise modification timestamps instead of relative time.
+- **Exact Time Display (`--exact-time`)** - Show precise modification timestamps instead of relative time.
 - **Size-Based Sorting (-S)** - Sort files by size with directories prioritized.
 - **Extension-Based Sorting (-X)** - Group files by their extensions for better organization.
 - **Transparent Object Visibility (-h)** - Explicit monitoring of hidden files (internal metadata) for complete oversight.
@@ -145,25 +145,25 @@ $ lu -X
 $ lu -Sr
 
 # Show exact modification time
-$ lu -T
+$ lu --exact-time
 
 # Show octal permissions
 $ lu -o
 
 # Combine exact time with git status
-$ lu -Tg
+$ lu --exact-time -g
 
 # Tree view display
-$ lu -F
+$ lu -T
 
 # Tree view with git status
-$ lu -Fg
+$ lu -Tg
 
 # Tree view with max depth
-$ lu -F -L 3
+$ lu -T -L 3
 
 # Tree view with sorting
-$ lu -F -S
+$ lu -T -S
 
 # List recursive
 $ lu -R
@@ -200,13 +200,14 @@ $ lu -hut
 | **-g** | `--git`            | Show Git status for each file/directory.             |
 | **-h** | `--hidden`         | Include hidden files in the listing.                 |
 | **-u** | `--user`           | Show User and Group ownership metadata.              |
-| **-T** | `--exact-time`     | Show exact modification time instead of relative.    |
 | **-o** | `--octal`          | Show octal permissions instead of rwx.               |
-| **-F** | `--tree`           | Display directory structure in a tree format.        |
+| **-T** | `--tree`           | Display directory structure in a tree format.        |
 | **-R** | `--recursive`      | List subdirectories recursively.                     |
 | **-L** | `--max-depth`      | Maximum recursion depth (0 = no limit, default: 30). |
 | **-i** | `--include`        | Include files matching specified glob patterns.      |
 | **-x** | `--exclude`        | Exclude files matching specified glob patterns.      |
+|        | `--exact-time`     | Show exact modification time instead of relative.    |
+|        | `--color`          | Control color output (always/auto/never).            |
 
 ### 🔄 Sorting Priority
 
@@ -221,7 +222,8 @@ Only one sorting mode is active at a time.
 
 ### 💡 Pro Tips Like a "Lord"
 
-- Use `-T` for precise timestamps when auditing file changes
+- Use `--octal` to show octal permissions instead of rwx.
+- Use `--exact-time` for precise timestamps when auditing file changes
 - Combine `-S` with `-r` to find smallest files first
 - Use `-X` to group files by type for better organization
 - Tree view supports all flags including git status, sorting, and filtering

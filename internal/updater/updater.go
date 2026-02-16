@@ -140,7 +140,7 @@ func PerformRollback() error {
 		color.Yellow("⚠ lu-hut was installed via Homebrew")
 		color.Cyan("→ Rollback is not supported for Homebrew installations")
 		color.Cyan("→ Use 'brew install lu-hut@<version>' to install a specific version")
-		return nil
+		return fmt.Errorf("rollback is not supported for Homebrew installations")
 	}
 
 	execPath, err := os.Executable()

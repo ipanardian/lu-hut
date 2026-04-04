@@ -4,25 +4,31 @@ package filter
 import (
 	"path/filepath"
 
+	"github.com/ipanardian/lu-hut/internal/gitignore"
 	"github.com/ipanardian/lu-hut/internal/model"
 )
 
 type Filter struct {
 	includePatterns []string
 	excludePatterns []string
+	gitIgnore       *gitignore.Matcher
 }
 
-func NewFilter(includePatterns, excludePatterns []string) *Filter {
+func NewFilter(includePatterns, excludePatterns []string, gitIgnore *gitignore.Matcher) *Filter {
 	return &Filter{
 		includePatterns: includePatterns,
 		excludePatterns: excludePatterns,
+		gitIgnore:       gitIgnore,
 	}
 }
 
-func (f *Filter) Apply(files []model.FileEntry, showHidden bool) []model.FileEntry {
+func (f *Filter) Apply(files []model.FileEntry, showHidden bool, basePath string) []model.FileEntry {
 	var filtered []model.FileEntry
 	for _, file := range files {
 		if !showHidden && file.IsHidden {
+			continue
+		}
+		if f.gitIgnore != nil && file.Name == ".git" {
 			continue
 		}
 		if f.shouldExclude(file.Name) {
@@ -30,6 +36,12 @@ func (f *Filter) Apply(files []model.FileEntry, showHidden bool) []model.FileEnt
 		}
 		if len(f.includePatterns) > 0 && !f.shouldInclude(file.Name) {
 			continue
+		}
+		if f.gitIgnore != nil {
+			filePath := filepath.Join(basePath, file.Name)
+			if f.gitIgnore.IsIgnored(filePath, file.IsDir) {
+				continue
+			}
 		}
 		filtered = append(filtered, file)
 	}
@@ -64,4 +76,14 @@ func (f *Filter) ShouldExclude(name string) bool {
 
 func (f *Filter) HasIncludePatterns() bool {
 	return len(f.includePatterns) > 0
+}
+
+func (f *Filter) IsGitIgnored(path string, isDir bool) bool {
+	if f.gitIgnore == nil {
+		return false
+	}
+	if filepath.Base(path) == ".git" {
+		return true
+	}
+	return f.gitIgnore.IsIgnored(path, isDir)
 }

@@ -16,8 +16,8 @@ func TestFileFilter(t *testing.T) {
 	}
 
 	t.Run("show hidden false", func(t *testing.T) {
-		filter := NewFilter(nil, nil)
-		result := filter.Apply(files, false)
+		filter := NewFilter(nil, nil, nil)
+		result := filter.Apply(files, false, "/tmp")
 
 		if len(result) != 4 {
 			t.Errorf("expected 4 files, got %d", len(result))
@@ -31,8 +31,8 @@ func TestFileFilter(t *testing.T) {
 	})
 
 	t.Run("show hidden true", func(t *testing.T) {
-		filter := NewFilter(nil, nil)
-		result := filter.Apply(files, true)
+		filter := NewFilter(nil, nil, nil)
+		result := filter.Apply(files, true, "/tmp")
 
 		if len(result) != 5 {
 			t.Errorf("expected 5 files, got %d", len(result))
@@ -40,8 +40,8 @@ func TestFileFilter(t *testing.T) {
 	})
 
 	t.Run("include pattern", func(t *testing.T) {
-		filter := NewFilter([]string{"lord.go"}, nil)
-		result := filter.Apply(files, false)
+		filter := NewFilter([]string{"lord.go"}, nil, nil)
+		result := filter.Apply(files, false, "/tmp")
 
 		if len(result) != 1 {
 			t.Errorf("expected 1 file, got %d", len(result))
@@ -53,8 +53,8 @@ func TestFileFilter(t *testing.T) {
 	})
 
 	t.Run("exclude pattern", func(t *testing.T) {
-		filter := NewFilter(nil, []string{"*tambang.py"})
-		result := filter.Apply(files, false)
+		filter := NewFilter(nil, []string{"*tambang.py"}, nil)
+		result := filter.Apply(files, false, "/tmp")
 
 		if len(result) != 3 {
 			t.Errorf("expected 3 files, got %d", len(result))
@@ -68,8 +68,8 @@ func TestFileFilter(t *testing.T) {
 	})
 
 	t.Run("include and exclude", func(t *testing.T) {
-		filter := NewFilter([]string{"*.py"}, []string{"*.go"})
-		result := filter.Apply(files, false)
+		filter := NewFilter([]string{"*.py"}, []string{"*.go"}, nil)
+		result := filter.Apply(files, false, "/tmp")
 
 		if len(result) != 1 {
 			t.Errorf("expected 1 file, got %d", len(result))

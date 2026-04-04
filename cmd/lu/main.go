@@ -82,6 +82,7 @@ Version: ` + constants.Version,
 	rootCmd.Flags().IntVarP(&cfg.MaxDepth, "max-depth", "L", cfg.MaxDepth, "maximum recursion depth (0 = no limit, default: 30)")
 	rootCmd.Flags().StringSliceVarP(&cfg.IncludePatterns, "include", "i", nil, "include files matching glob patterns (quote the pattern)")
 	rootCmd.Flags().StringSliceVarP(&cfg.ExcludePatterns, "exclude", "x", nil, "exclude files matching glob patterns (quote the pattern)")
+	rootCmd.Flags().BoolVarP(&cfg.GitIgnore, "git-ignore", "G", false, "ignore files listed in .gitignore")
 
 	var help bool
 	rootCmd.Flags().BoolVar(&help, "help", false, "help for lu")

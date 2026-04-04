@@ -16,6 +16,7 @@ import (
 	"github.com/ipanardian/lu-hut/internal/config"
 	"github.com/ipanardian/lu-hut/internal/filter"
 	"github.com/ipanardian/lu-hut/internal/git"
+	"github.com/ipanardian/lu-hut/internal/gitignore"
 	"github.com/ipanardian/lu-hut/internal/model"
 	"github.com/ipanardian/lu-hut/internal/renderer"
 	"github.com/ipanardian/lu-hut/internal/sort"
@@ -24,6 +25,7 @@ import (
 type Lister struct {
 	config    config.Config
 	gitRepo   *git.Repository
+	gitIgnore *gitignore.Matcher
 	filter    *filter.Filter
 	sortStrat sort.Strategy
 }
@@ -37,7 +39,7 @@ func New(cfg config.Config) *Lister {
 	case "auto":
 	}
 
-	filter := filter.NewFilter(cfg.IncludePatterns, cfg.ExcludePatterns)
+	filter := filter.NewFilter(cfg.IncludePatterns, cfg.ExcludePatterns, nil)
 
 	var sortStrat sort.Strategy
 	if cfg.SortSize {
@@ -89,6 +91,11 @@ func (d *Lister) List(path string) error {
 		d.gitRepo, _ = git.NewRepository(absPath)
 	}
 
+	if d.config.GitIgnore {
+		d.gitIgnore, _ = gitignore.NewMatcher(absPath)
+		d.filter = filter.NewFilter(d.config.IncludePatterns, d.config.ExcludePatterns, d.gitIgnore)
+	}
+
 	if d.config.Tree {
 		return d.listTree(ctx, absPath)
 	}
@@ -103,7 +110,7 @@ func (d *Lister) List(path string) error {
 	}
 
 	files := d.collectFiles(absPath, entries)
-	files = d.filter.Apply(files, d.config.ShowHidden)
+	files = d.filter.Apply(files, d.config.ShowHidden, absPath)
 	d.sortStrat.Sort(files, d.config.Reverse)
 
 	renderer := renderer.NewTable(d.config)
@@ -174,7 +181,7 @@ func (d *Lister) listRecursive(ctx context.Context, rootPath string) error {
 		}
 
 		files := d.collectFiles(current.path, entries)
-		files = d.filter.Apply(files, d.config.ShowHidden)
+		files = d.filter.Apply(files, d.config.ShowHidden, current.path)
 		d.sortStrat.Sort(files, d.config.Reverse)
 
 		if len(files) == 0 {

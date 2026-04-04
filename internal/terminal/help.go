@@ -54,6 +54,7 @@ func ShowColoredHelp(cmd *cobra.Command) {
 		{"-L, --max-depth", "maximum recursion depth (0 = no limit, default: 30)"},
 		{"-i, --include", "include files matching glob patterns (quote the pattern)"},
 		{"-x, --exclude", "exclude files matching glob patterns (quote the pattern)"},
+		{"-G, --git-ignore", "ignore files listed in .gitignore"},
 		{"-o, --octal", "show file permissions in octal format"},
 		{"--exact-time", "show exact modification time instead of relative"},
 		{"--color", "control color output (always|auto|never)"},

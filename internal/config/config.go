@@ -15,6 +15,7 @@ type Config struct {
 	ShowOctal       bool
 	Recursive       bool
 	Tree            bool
+	GitIgnore       bool
 	MaxDepth        int
 	ColorMode       string
 	IncludePatterns []string

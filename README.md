@@ -26,6 +26,7 @@
 - **Transparent Object Visibility (-h)** - Explicit monitoring of hidden files (internal metadata) for complete oversight.
 - **Unit Coordination Visibility (-u)** - Detailed User and Group identification to maintain accountability.
 - **Advanced Filtering Capability** - Strict inclusion and exclusion logic using glob patterns (`-i`, `-x`).
+- **Git Ignore Filter (-G)** - Automatically exclude files and directories listed in `.gitignore`. Works with all views including tree and hidden files mode.
 - **Responsive Terminal Scaling** - Adaptive output that maintains data integrity across different terminal widths.
 - **Safe Recursive Listing** - Recursive directory traversal with depth limits and cancellation support.
 - **Octal Mode Display** - Option to display file modes in octal format.
@@ -177,6 +178,15 @@ $ lu -i "*.go" -x "*_test.go"
 # Lord mode (Hidden, User, Time Sort)
 $ lu -hut
 
+# Ignore files listed in .gitignore
+$ lu -G
+
+# Show hidden files but exclude gitignored entries
+$ lu -hG
+
+# Tree view with gitignore filter
+$ lu -TG
+
 ```
 
 ## ⚙️ Commands & Parameters
@@ -206,6 +216,7 @@ $ lu -hut
 | **-L** | `--max-depth`      | Maximum recursion depth (0 = no limit, default: 30). |
 | **-i** | `--include`        | Include files matching specified glob patterns.      |
 | **-x** | `--exclude`        | Exclude files matching specified glob patterns.      |
+| **-G** | `--git-ignore`     | Ignore files and directories listed in `.gitignore`. |
 |        | `--exact-time`     | Show exact modification time instead of relative.    |
 |        | `--color`          | Control color output (always/auto/never).            |
 

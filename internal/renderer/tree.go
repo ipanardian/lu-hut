@@ -114,6 +114,9 @@ func (r *Tree) renderTreeRecursive(ctx context.Context, path string, prefix stri
 			var filtered []model.FileEntry
 
 			for _, file := range files {
+				if r.filter.IsGitIgnored(file.Path, file.IsDir) {
+					continue
+				}
 				if file.IsDir {
 					if r.hasMatchingDescendants(ctx, file.Path) {
 						filtered = append(filtered, file)
@@ -129,9 +132,13 @@ func (r *Tree) renderTreeRecursive(ctx context.Context, path string, prefix stri
 		} else {
 			var filtered []model.FileEntry
 			for _, file := range files {
-				if !r.filter.ShouldExclude(file.Name) {
-					filtered = append(filtered, file)
+				if r.filter.ShouldExclude(file.Name) {
+					continue
 				}
+				if r.filter.IsGitIgnored(file.Path, file.IsDir) {
+					continue
+				}
+				filtered = append(filtered, file)
 			}
 			files = filtered
 		}

@@ -276,7 +276,20 @@ func formatPermissions(mode fs.FileMode, useOctal bool) string {
 	perm := mode.Perm()
 
 	if useOctal {
-		return color.New(color.FgHiWhite).Sprint(fmt.Sprintf("%04o", perm))
+		octal := fmt.Sprintf("%04o", perm)
+		permVal := int(perm)
+		var permColor *color.Color
+		switch {
+		case permVal >= 0o700:
+			permColor = color.New(color.FgRed, color.Bold)
+		case permVal >= 0o600:
+			permColor = color.New(color.FgGreen, color.Bold)
+		case permVal >= 0o400:
+			permColor = color.New(color.FgYellow, color.Bold)
+		default:
+			permColor = color.New(color.FgHiBlack)
+		}
+		return color.New(color.FgHiBlack).Sprint(string(octal[0])) + permColor.Sprint(octal[1:])
 	}
 
 	var result strings.Builder

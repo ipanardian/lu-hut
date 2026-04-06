@@ -13,6 +13,7 @@ type Config struct {
 	ShowUser        bool
 	ShowExactTime   bool
 	ShowOctal       bool
+	ShowLong        bool
 	Recursive       bool
 	Tree            bool
 	GitIgnore       bool

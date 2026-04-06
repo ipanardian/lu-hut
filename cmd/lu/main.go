@@ -77,6 +77,7 @@ Version: ` + constants.Version,
 	rootCmd.Flags().BoolVarP(&cfg.ShowUser, "user", "u", false, "show user and group ownership metadata")
 	rootCmd.Flags().BoolVar(&cfg.ShowExactTime, "exact-time", false, "show exact modification time instead of relative")
 	rootCmd.Flags().BoolVarP(&cfg.ShowOctal, "octal", "o", false, "show octal permissions instead of rwx")
+	rootCmd.Flags().BoolVarP(&cfg.ShowLong, "long", "l", false, "show detailed metadata in tree view (permissions, size, time, user/group)")
 	rootCmd.Flags().BoolVarP(&cfg.Tree, "tree", "T", false, "display directory structure in a tree format")
 	rootCmd.Flags().BoolVarP(&cfg.Recursive, "recursive", "R", false, "list subdirectories recursively")
 	rootCmd.Flags().IntVarP(&cfg.MaxDepth, "max-depth", "L", cfg.MaxDepth, "maximum recursion depth (0 = no limit, default: 30)")

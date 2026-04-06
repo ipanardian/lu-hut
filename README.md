@@ -18,7 +18,8 @@
 - **Beautiful Box-Drawn Tables** - Clean, box-drawn tables with colored borders for excellent readability.
 - **Hierarchical Directory Priority** - Folders are prioritized at the top of the list for structured navigation.
 - **Stunning Tree View Display (-T)** - Display directory structure in a beautiful tree format with all features supported. Tree view can be cancelled with `Ctrl+C`
-- **Dynamic Git Monitoring (-g)** - Real-time tracking of file states (Untracked, Modified, Added) directly in the table.
+- **Long Tree View (-l)** - Show detailed metadata in tree view (permissions, size, modified time, user/group) with eza-style column alignment
+- **Dynamic Git Monitoring (-g)** - Real-time tracking of file states (Untracked, Modified, Added) in both table and tree views.
 - **Time-Aware Color Grading (-t)** - Intelligent color schemes based on file age to quickly identify recent changes.
 - **Exact Time Display (`--exact-time`)** - Show precise modification timestamps instead of relative time.
 - **Size-Based Sorting (-S)** - Sort files by size with directories prioritized.
@@ -157,8 +158,20 @@ $ lu --exact-time -g
 # Tree view display
 $ lu -T
 
+# Tree view with user/group
+$ lu -T -u
+
 # Tree view with git status
-$ lu -Tg
+$ lu -T -g
+
+# Tree view with user and git status
+$ lu -T -u -g
+
+# Long tree view (full metadata)
+$ lu -Tl
+
+# Long tree view with git status
+$ lu -Tl -g
 
 # Tree view with max depth
 $ lu -T -L 3
@@ -207,9 +220,10 @@ $ lu -TG
 | **-S** | `--sort-size`      | Sort by file size (largest first).                   |
 | **-X** | `--sort-extension` | Sort by file extension.                              |
 | **-r** | `--reverse`        | Reverse sort order.                                  |
-| **-g** | `--git`            | Show Git status for each file/directory.             |
+| **-g** | `--git`            | Show Git status (works in table and tree views).     |
 | **-h** | `--hidden`         | Include hidden files in the listing.                 |
-| **-u** | `--user`           | Show User and Group ownership metadata.              |
+| **-u** | `--user`           | Show User and Group ownership (works in all views).  |
+| **-l** | `--long`           | Show detailed metadata in tree view.                 |
 | **-o** | `--octal`          | Show octal permissions instead of rwx.               |
 | **-T** | `--tree`           | Display directory structure in a tree format.        |
 | **-R** | `--recursive`      | List subdirectories recursively.                     |
@@ -237,6 +251,9 @@ Only one sorting mode is active at a time.
 - Use `--exact-time` for precise timestamps when auditing file changes
 - Combine `-S` with `-r` to find smallest files first
 - Use `-X` to group files by type for better organization
+- **Flags work consistently** across table and tree views - use `-u` for user/group, `-g` for git status in any view
+- Use `-Tl` for long tree view with full metadata (permissions, size, time, user/group)
+- Combine flags: `-T -u -g` shows tree with user and git status, `-Tl -g -o` shows full metadata with git and octal permissions
 - Tree view supports all flags including git status, sorting, and filtering
 - Recursive listing respects all filters and sorting options
 - Symlink targets are shown inline as `name -> target`. When targets are long they will be truncated smartly to preserve the trailing path (the tail is usually the most informative).

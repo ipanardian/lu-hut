@@ -12,6 +12,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/fatih/color"
+	"github.com/ipanardian/lu-hut/internal/icons"
 	"github.com/ipanardian/lu-hut/internal/model"
 	"github.com/ipanardian/lu-hut/pkg/helper"
 	"golang.org/x/term"
@@ -149,48 +150,61 @@ func truncateSymlinkParts(name, target string, maxWidth int) (string, string) {
 	return truncateMiddle(name, nameBudget), truncateTail(target, targetBudget)
 }
 
-func formatName(file model.FileEntry, maxWidth int) string {
+func formatName(file model.FileEntry, maxWidth int, iconMode icons.Mode) string {
 	originalName := file.Name
 	name := originalName
+
+	iconPrefix := icons.Prefix(originalName, file.IsDir, false, iconMode)
+
+	// Account for icon width in the available name budget.
+	iconDisplayWidth := 0
+	if iconPrefix != "" {
+		iconDisplayWidth = icons.IconWidth
+	}
+
 	if maxWidth <= 0 {
 		maxWidth = defaultNameMaxWidth
 	}
+	nameBudget := max(maxWidth-iconDisplayWidth, 1)
 
 	if file.Mode&fs.ModeSymlink != 0 {
 		if target, err := os.Readlink(file.Path); err == nil {
-			truncName, truncTarget := truncateSymlinkParts(name, target, maxWidth)
+			truncName, truncTarget := truncateSymlinkParts(name, target, nameBudget)
+			var formatted string
 			if truncTarget == "" {
-				return color.New(color.FgMagenta, color.Bold).Sprint(truncName)
+				formatted = color.New(color.FgMagenta, color.Bold).Sprint(truncName)
+			} else {
+				formatted = color.New(color.FgMagenta, color.Bold).Sprint(truncName) + " -> " + color.New(color.FgHiBlack).Sprint(truncTarget)
 			}
-			return color.New(color.FgMagenta, color.Bold).Sprint(truncName) + " -> " + color.New(color.FgHiBlack).Sprint(truncTarget)
+			return iconPrefix + formatted
 		}
-		return color.New(color.FgMagenta, color.Bold).Sprint(truncateMiddle(name, maxWidth))
+		return iconPrefix + color.New(color.FgMagenta, color.Bold).Sprint(truncateMiddle(name, nameBudget))
 	}
 
-	name = truncateMiddle(name, maxWidth)
+	name = truncateMiddle(name, nameBudget)
 
 	if file.IsDir {
-		return color.New(color.FgBlue, color.Bold).Sprint(name)
+		return iconPrefix + color.New(color.FgBlue, color.Bold).Sprint(name)
 	}
 
 	if file.Mode.Perm()&0111 != 0 {
-		return color.New(color.FgRed).Sprint(name)
+		return iconPrefix + color.New(color.FgRed).Sprint(name)
 	}
 
 	if file.IsHidden {
-		return color.New(color.FgYellow).Sprint(name)
+		return iconPrefix + color.New(color.FgYellow).Sprint(name)
 	}
 
 	ext := strings.ToLower(filepath.Ext(originalName))
 	switch ext {
 	case ".go", ".rs", ".py", ".js", ".ts", ".jsx", ".tsx":
-		return color.New(color.FgGreen).Sprint(name)
+		return iconPrefix + color.New(color.FgGreen).Sprint(name)
 	case ".md", ".txt", ".rst":
-		return color.New(color.FgYellow).Sprint(name)
+		return iconPrefix + color.New(color.FgYellow).Sprint(name)
 	case ".yml", ".yaml", ".json", ".toml", ".ini":
-		return color.New(color.FgMagenta).Sprint(name)
+		return iconPrefix + color.New(color.FgMagenta).Sprint(name)
 	default:
-		return color.New(color.FgWhite).Sprint(name)
+		return iconPrefix + color.New(color.FgWhite).Sprint(name)
 	}
 }
 

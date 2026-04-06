@@ -32,6 +32,7 @@
 - **Safe Recursive Listing** - Recursive directory traversal with depth limits and cancellation support.
 - **Octal Mode Display** - Option to display file modes in octal format.
 - **Symlink Target Display** - Symlink targets are shown inline as `name -> target`. Long targets are intelligently truncated and the tail is preserved.
+- **Nerd Font Icons** - Display file-type icons based on filename, extension, and directory name using Nerd Fonts. Auto-detected when running in a TTY, gracefully disabled in pipes and non-interactive environments.
 
 ---
 
@@ -70,10 +71,12 @@ brew upgrade lu-hut
 **macOS and Linux:**
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/ipanardian/lu-hut/main/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/ipanardian/lu-hut/main/install.sh | bash
 ```
 
 ### Build from Source
+
+If you want to get the latest update then you can build from source:
 
 ```bash
 $ git clone https://github.com/ipanardian/lu-hut.git
@@ -200,6 +203,18 @@ $ lu -hG
 # Tree view with gitignore filter
 $ lu -TG
 
+# Show icons (auto-detected when in a TTY, requires Nerd Font)
+$ lu --icons=auto
+
+# Force icons on (useful when auto-detection misses your terminal)
+$ lu --icons=always
+
+# Disable icons
+$ lu --icons=never
+
+# Tree view with icons and full metadata
+$ lu -Tlo --icons=always
+
 ```
 
 ## ⚙️ Commands & Parameters
@@ -214,25 +229,26 @@ $ lu -TG
 
 ### Flags
 
-| Flag   | Long Flag          | Description                                          |
-| :----- | :----------------- | :--------------------------------------------------- |
-| **-t** | `--sort-modified`  | Sort by modification time (newest first).            |
-| **-S** | `--sort-size`      | Sort by file size (largest first).                   |
-| **-X** | `--sort-extension` | Sort by file extension.                              |
-| **-r** | `--reverse`        | Reverse sort order.                                  |
-| **-g** | `--git`            | Show Git status (works in table and tree views).     |
-| **-h** | `--hidden`         | Include hidden files in the listing.                 |
-| **-u** | `--user`           | Show User and Group ownership (works in all views).  |
-| **-l** | `--long`           | Show detailed metadata in tree view.                 |
-| **-o** | `--octal`          | Show octal permissions instead of rwx.               |
-| **-T** | `--tree`           | Display directory structure in a tree format.        |
-| **-R** | `--recursive`      | List subdirectories recursively.                     |
-| **-L** | `--max-depth`      | Maximum recursion depth (0 = no limit, default: 30). |
-| **-i** | `--include`        | Include files matching specified glob patterns.      |
-| **-x** | `--exclude`        | Exclude files matching specified glob patterns.      |
-| **-G** | `--git-ignore`     | Ignore files and directories listed in `.gitignore`. |
-|        | `--exact-time`     | Show exact modification time instead of relative.    |
-|        | `--color`          | Control color output (always/auto/never).            |
+| Flag   | Long Flag          | Description                                                |
+| :----- | :----------------- | :--------------------------------------------------------- |
+| **-t** | `--sort-modified`  | Sort by modification time (newest first).                  |
+| **-S** | `--sort-size`      | Sort by file size (largest first).                         |
+| **-X** | `--sort-extension` | Sort by file extension.                                    |
+| **-r** | `--reverse`        | Reverse sort order.                                        |
+| **-g** | `--git`            | Show Git status (works in table and tree views).           |
+| **-h** | `--hidden`         | Include hidden files in the listing.                       |
+| **-u** | `--user`           | Show User and Group ownership (works in all views).        |
+| **-l** | `--long`           | Show detailed metadata in tree view.                       |
+| **-o** | `--octal`          | Show octal permissions instead of rwx.                     |
+| **-T** | `--tree`           | Display directory structure in a tree format.              |
+| **-R** | `--recursive`      | List subdirectories recursively.                           |
+| **-L** | `--max-depth`      | Maximum recursion depth (0 = no limit, default: 30).       |
+| **-i** | `--include`        | Include files matching specified glob patterns.            |
+| **-x** | `--exclude`        | Exclude files matching specified glob patterns.            |
+| **-G** | `--git-ignore`     | Ignore files and directories listed in `.gitignore`.       |
+|        | `--exact-time`     | Show exact modification time instead of relative.          |
+|        | `--color`          | Control color output (always/auto/never).                  |
+|        | `--icons`          | Control icon display (always/auto/never). Default: `auto`. |
 
 ### 🔄 Sorting Priority
 
@@ -258,6 +274,9 @@ Only one sorting mode is active at a time.
 - Recursive listing respects all filters and sorting options
 - Symlink targets are shown inline as `name -> target`. When targets are long they will be truncated smartly to preserve the trailing path (the tail is usually the most informative).
 - Press `Ctrl+C` during recursive listing to cancel safely
+- Use `--icons=always` to force icons on if auto-detection doesn't enable them in your terminal
+- Icons require a [Nerd Font](https://www.nerdfonts.com/) — install `JetBrainsMono Nerd Font` or `Hack Nerd Font` for best results
+- `--icons=auto` (default) auto-detects TTY and disables icons when piping output, so `lu | grep foo` stays clean
 
 ### ⚖️ Legal Disclaimer
 

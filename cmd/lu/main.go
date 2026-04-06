@@ -68,6 +68,7 @@ Version: ` + constants.Version,
 	}
 
 	rootCmd.Flags().StringVar(&cfg.ColorMode, "color", "", "color output mode (always|auto|never)")
+	rootCmd.Flags().StringVar(&cfg.IconMode, "icons", "auto", "when to display Nerd Font icons (always|auto|never)")
 	rootCmd.Flags().BoolVarP(&cfg.SortModified, "sort-modified", "t", false, "sort by modified time (newest first)")
 	rootCmd.Flags().BoolVarP(&cfg.SortSize, "sort-size", "S", false, "sort by file size (largest first)")
 	rootCmd.Flags().BoolVarP(&cfg.SortExtension, "sort-extension", "X", false, "sort by file extension")

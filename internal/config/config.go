@@ -19,6 +19,7 @@ type Config struct {
 	GitIgnore       bool
 	MaxDepth        int
 	ColorMode       string
+	IconMode        string
 	IncludePatterns []string
 	ExcludePatterns []string
 }
@@ -35,6 +36,9 @@ func (c Config) Validate() error {
 	}
 	if c.ColorMode != "" && c.ColorMode != "always" && c.ColorMode != "auto" && c.ColorMode != "never" {
 		return fmt.Errorf("invalid color mode: %s (must be always, auto, or never)", c.ColorMode)
+	}
+	if c.IconMode != "" && c.IconMode != "always" && c.IconMode != "auto" && c.IconMode != "never" {
+		return fmt.Errorf("invalid icon mode: %s (must be always, auto, or never)", c.IconMode)
 	}
 	return nil
 }

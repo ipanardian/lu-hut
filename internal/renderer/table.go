@@ -7,6 +7,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/ipanardian/lu-hut/internal/config"
+	"github.com/ipanardian/lu-hut/internal/icons"
 	"github.com/ipanardian/lu-hut/internal/model"
 	"github.com/ipanardian/lu-hut/internal/table"
 )
@@ -85,9 +86,10 @@ func (r *Table) buildTableData(files []model.FileEntry, now time.Time, nameWidth
 	data := make([][]string, len(files)+1)
 	data[0] = headers
 
+	iconMode := icons.Mode(r.config.IconMode)
 	for i, file := range files {
 		row := []string{
-			formatName(file, nameWidth),
+			formatName(file, nameWidth, iconMode),
 			formatSize(file.Size, file.IsDir),
 			formatModified(file.ModTime, now, r.config.ShowExactTime),
 			formatPermissions(file.Mode, r.config.ShowOctal),

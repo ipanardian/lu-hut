@@ -15,6 +15,7 @@ import (
 	"github.com/ipanardian/lu-hut/internal/config"
 	"github.com/ipanardian/lu-hut/internal/filter"
 	"github.com/ipanardian/lu-hut/internal/git"
+	"github.com/ipanardian/lu-hut/internal/icons"
 	"github.com/ipanardian/lu-hut/internal/model"
 	"github.com/ipanardian/lu-hut/internal/sort"
 	"github.com/ipanardian/lu-hut/pkg/helper"
@@ -188,6 +189,8 @@ func (r *Tree) renderTreeRecursive(ctx context.Context, path string, prefix stri
 			line = prefix + connector
 		}
 
+		iconMode := icons.Mode(r.config.IconMode)
+
 		nameWidth := getTerminalWidth()
 		if nameWidth <= 0 {
 			nameWidth = defaultNameMaxWidth
@@ -203,9 +206,9 @@ func (r *Tree) renderTreeRecursive(ctx context.Context, path string, prefix stri
 			if dirWidth > 1 {
 				dirWidth--
 			}
-			line += formatName(file, dirWidth) + "/"
+			line += formatName(file, dirWidth, iconMode) + "/"
 		} else {
-			line += formatName(file, nameWidth)
+			line += formatName(file, nameWidth, iconMode)
 		}
 
 		if r.config.ShowGit && r.gitRepo != nil && !file.IsDir {

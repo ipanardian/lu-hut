@@ -5,13 +5,17 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/ipanardian/lu-hut/internal/config"
 	"github.com/ipanardian/lu-hut/internal/filter"
 	"github.com/ipanardian/lu-hut/internal/git"
+	"github.com/ipanardian/lu-hut/internal/icons"
 	"github.com/ipanardian/lu-hut/internal/model"
 	"github.com/ipanardian/lu-hut/internal/sort"
 	"github.com/ipanardian/lu-hut/pkg/helper"
@@ -22,6 +26,10 @@ type Tree struct {
 	gitRepo      *git.Repository
 	sortStrategy sort.Strategy
 	filter       *filter.Filter
+	maxPermWidth int
+	maxSizeWidth int
+	maxModWidth  int
+	maxUserWidth int
 }
 
 func NewTree(cfg config.Config) *Tree {
@@ -53,6 +61,12 @@ func (r *Tree) SetFilter(f *filter.Filter) {
 func (r *Tree) Render(ctx context.Context, path string, now time.Time) error {
 	if ctx == nil {
 		ctx = context.Background()
+	}
+
+	if r.config.ShowLong || r.config.ShowUser {
+		if err := r.calculateColumnWidths(ctx, path, 0, now); err != nil {
+			return err
+		}
 	}
 
 	err := r.renderTreeRecursive(ctx, path, "", true, 0, now)
@@ -100,6 +114,14 @@ func (r *Tree) renderTreeRecursive(ctx context.Context, path string, prefix stri
 			ModTime:  info.ModTime(),
 			IsDir:    entry.IsDir(),
 			IsHidden: strings.HasPrefix(entry.Name(), "."),
+		}
+
+		if r.config.ShowLong || r.config.ShowUser {
+			file.Author, file.Group = r.extractUserGroup(info)
+		}
+
+		if r.config.ShowGit && r.gitRepo != nil {
+			file.GitStatus = r.gitRepo.GetStatus(file.Path)
 		}
 
 		files = append(files, file)
@@ -159,7 +181,16 @@ func (r *Tree) renderTreeRecursive(ctx context.Context, path string, prefix stri
 			connector = "└── "
 		}
 
-		line := prefix + connector
+		var line string
+		if r.config.ShowLong || r.config.ShowUser {
+			metadataPrefix := r.formatMetadataPrefixAligned(file, now)
+			line = metadataPrefix + prefix + connector
+		} else {
+			line = prefix + connector
+		}
+
+		iconMode := icons.Mode(r.config.IconMode)
+
 		nameWidth := getTerminalWidth()
 		if nameWidth <= 0 {
 			nameWidth = defaultNameMaxWidth
@@ -175,9 +206,9 @@ func (r *Tree) renderTreeRecursive(ctx context.Context, path string, prefix stri
 			if dirWidth > 1 {
 				dirWidth--
 			}
-			line += formatName(file, dirWidth) + "/"
+			line += formatName(file, dirWidth, iconMode) + "/"
 		} else {
-			line += formatName(file, nameWidth)
+			line += formatName(file, nameWidth, iconMode)
 		}
 
 		if r.config.ShowGit && r.gitRepo != nil && !file.IsDir {
@@ -244,4 +275,150 @@ func (r *Tree) hasMatchingDescendants(ctx context.Context, dirPath string) bool 
 	}
 
 	return result
+}
+
+func (r *Tree) extractUserGroup(fileInfo os.FileInfo) (string, string) {
+	if stat, ok := fileInfo.Sys().(*syscall.Stat_t); ok {
+		u, errU := user.LookupId(strconv.Itoa(int(stat.Uid)))
+		g, errG := user.LookupGroupId(strconv.Itoa(int(stat.Gid)))
+
+		username := "unknown"
+		groupname := "unknown"
+
+		if errU == nil {
+			username = u.Username
+		}
+		if errG == nil {
+			groupname = g.Name
+		}
+
+		return username, groupname
+	}
+	return "unknown", "unknown"
+}
+
+func (r *Tree) calculateColumnWidths(ctx context.Context, path string, level int, now time.Time) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	if r.config.MaxDepth > 0 && level >= r.config.MaxDepth {
+		return nil
+	}
+
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return nil
+	}
+
+	for _, entry := range entries {
+		if !r.config.ShowHidden && strings.HasPrefix(entry.Name(), ".") {
+			continue
+		}
+
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+
+		file := model.FileEntry{
+			Path:    filepath.Join(path, entry.Name()),
+			Size:    info.Size(),
+			Mode:    info.Mode(),
+			ModTime: info.ModTime(),
+			IsDir:   entry.IsDir(),
+		}
+
+		if r.config.ShowLong || r.config.ShowUser {
+			file.Author, _ = r.extractUserGroup(info)
+		}
+
+		perms := helper.StripANSI(formatPermissions(file.Mode, r.config.ShowOctal))
+		size := helper.StripANSI(formatSize(file.Size, file.IsDir))
+		modified := helper.StripANSI(formatModified(file.ModTime, now, r.config.ShowExactTime))
+		user := file.Author
+		if user == "" {
+			user = "?"
+		}
+
+		if len(perms) > r.maxPermWidth {
+			r.maxPermWidth = len(perms)
+		}
+		if len(size) > r.maxSizeWidth {
+			r.maxSizeWidth = len(size)
+		}
+		if len(modified) > r.maxModWidth {
+			r.maxModWidth = len(modified)
+		}
+		if len(user) > r.maxUserWidth {
+			r.maxUserWidth = len(user)
+		}
+
+		if file.IsDir {
+			if err := r.calculateColumnWidths(ctx, file.Path, level+1, now); err != nil {
+				continue
+			}
+		}
+	}
+
+	return nil
+}
+
+func (r *Tree) formatMetadataPrefixAligned(file model.FileEntry, now time.Time) string {
+	if r.config.ShowLong {
+		return r.formatLongMetadata(file, now)
+	} else if r.config.ShowUser {
+		return r.formatUserMetadata(file)
+	}
+	return ""
+}
+
+func (r *Tree) formatLongMetadata(file model.FileEntry, now time.Time) string {
+	perms := formatPermissions(file.Mode, r.config.ShowOctal)
+	size := formatSize(file.Size, file.IsDir)
+
+	permsStr := r.padRight(perms, r.maxPermWidth)
+	sizeStr := r.padLeft(size, r.maxSizeWidth)
+
+	termWidth := getTerminalWidth()
+	if termWidth < 80 {
+		return permsStr + " " + sizeStr + " "
+	}
+
+	modified := formatModified(file.ModTime, now, r.config.ShowExactTime)
+	modifiedStr := r.padRight(modified, r.maxModWidth)
+
+	user := file.Author
+	if user == "" {
+		user = "?"
+	}
+	userStr := r.padRight(user, r.maxUserWidth)
+
+	return permsStr + " " + sizeStr + " " + modifiedStr + " " + userStr + " "
+}
+
+func (r *Tree) formatUserMetadata(file model.FileEntry) string {
+	user := file.Author
+	if user == "" {
+		user = "?"
+	}
+	return r.padRight(user, r.maxUserWidth) + " "
+}
+
+func (r *Tree) padRight(s string, maxWidth int) string {
+	displayWidth := len(helper.StripANSI(s))
+	var padding strings.Builder
+	for i := displayWidth; i < maxWidth; i++ {
+		padding.WriteString(" ")
+	}
+	return s + padding.String()
+}
+
+func (r *Tree) padLeft(s string, maxWidth int) string {
+	displayWidth := len(helper.StripANSI(s))
+	var padding strings.Builder
+	for i := displayWidth; i < maxWidth; i++ {
+		padding.WriteString(" ")
+	}
+	return padding.String() + s
 }

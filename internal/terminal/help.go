@@ -2,92 +2,68 @@
 package terminal
 
 import (
-	"fmt"
-
 	"github.com/fatih/color"
-	"github.com/ipanardian/lu-hut/internal/constants"
 	"github.com/spf13/cobra"
 )
 
-func ShowColoredHelp(cmd *cobra.Command) {
-	fmt.Printf("\n%s %s\n\n",
-		color.New(color.FgCyan, color.Bold).Sprint("lu-hut "+constants.Version),
-		color.New(color.FgHiWhite).Sprint("- a modern alternative to the Unix ls command with box-drawn tables, tree-view, colors, filtering, sorting and git integration"),
-	)
-	fmt.Printf("%s\n\n", color.New(color.FgHiBlack).Sprint("GitHub: https://github.com/ipanardian/lu-hut"))
+func init() {
+	cobra.AddTemplateFunc("luHeader", luHeader)
+	cobra.AddTemplateFunc("luCmd", luCmd)
+	cobra.AddTemplateFunc("luDesc", luDesc)
+}
 
-	fmt.Printf("%s\n\n", color.New(color.FgWhite).Sprint("USAGE:"))
-	fmt.Printf("  lu [path] [flags]\n")
-	fmt.Printf("  lu [command]\n\n")
+func luHeader(s string) string {
+	return color.New(color.FgWhite, color.Bold).Sprint(s)
+}
 
-	fmt.Printf("%s\n", color.New(color.FgWhite, color.Bold).Sprint("COMMANDS:"))
-	commands := []struct {
-		cmd, desc string
-	}{
-		{"update", "update lu to the latest version"},
-		{"version", "show version information"},
-		{"help", "show this help message"},
-	}
+func luCmd(s string) string {
+	return color.New(color.FgYellow, color.Bold).Sprint(s)
+}
 
-	for _, c := range commands {
-		fmt.Printf("  %s\t%s\n",
-			color.New(color.FgYellow, color.Bold).Sprintf("%-15s", c.cmd),
-			color.New(color.FgHiWhite).Sprint(c.desc),
-		)
-	}
-	fmt.Println()
+func luDesc(s string) string {
+	return color.New(color.FgHiWhite).Sprint(s)
+}
 
-	fmt.Printf("%s\n", color.New(color.FgWhite, color.Bold).Sprint("FLAGS:"))
+// UsageTemplate returns a Cobra usage template that wraps the default
+// sections (Usage, Available Commands, Flags, etc.) in lu-hut's color
+// scheme. Register it on the root command so every subcommand inherits
+// the same layout via Cobra's template inheritance.
+func UsageTemplate() string {
+	return `{{luHeader "Usage:"}}{{if .Runnable}}
+  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
+  {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
 
-	flags := []struct {
-		flag, desc string
-	}{
-		{"-t, --sort-modified", "sort by modified time (newest first)"},
-		{"-S, --sort-size", "sort by file size (largest first)"},
-		{"-X, --sort-extension", "sort by file extension"},
-		{"-r, --reverse", "reverse sort order"},
-		{"-g, --git", "show git status inline"},
-		{"-h, --hidden", "show hidden files"},
-		{"-u, --user", "show user and group ownership metadata."},
-		{"-T, --tree", "display directory structure in a tree format."},
-		{"-R, --recursive", "list subdirectories recursively"},
-		{"-L, --max-depth", "maximum recursion depth (0 = no limit, default: 30)"},
-		{"-i, --include", "include files matching glob patterns (quote the pattern)"},
-		{"-x, --exclude", "exclude files matching glob patterns (quote the pattern)"},
-		{"-G, --git-ignore", "ignore files listed in .gitignore"},
-		{"-o, --octal", "show file permissions in octal format"},
-		{"--exact-time", "show exact modification time instead of relative"},
-		{"--color", "control color output (always|auto|never)"},
-	}
+Aliases:
+  {{.NameAndAliases}}{{end}}{{if .HasExample}}
 
-	for _, f := range flags {
-		fmt.Printf("  %s\t%s\n",
-			color.New(color.FgCyan, color.Bold).Sprintf("%-20s", f.flag),
-			color.New(color.FgHiWhite).Sprint(f.desc),
-		)
-	}
+Examples:
+{{.Example}}{{end}}{{if .HasAvailableSubCommands}}{{$cmds := .Commands}}{{if eq (len .Groups) 0}}
 
-	fmt.Printf("\n%s\n", color.New(color.FgWhite, color.Bold).Sprint("EXAMPLES:"))
-	examples := []string{
-		"lu",
-		"lu -t",
-		"lu -tr",
-		"lu -g",
-		"lu -S",
-		"lu -F",
-		"lu -i '*.go'",
-		"lu -x '*.tambang'",
-		"lu -hut (Lord's mode)",
-		"",
-		"lu help",
-		"lu version",
-		"lu version --check",
-		"lu update",
-	}
+{{luHeader "Available Commands:"}}{{range $cmds}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
+  {{luCmd (rpad .Name .NamePadding) }} {{luDesc .Short}}{{end}}{{end}}{{else}}{{range $group := .Groups}}
 
-	for _, ex := range examples {
-		fmt.Printf("  %s\n", color.New(color.FgGreen).Sprint(ex))
-	}
+{{.Title}}{{range $cmds}}{{if (and (eq .GroupID $group.ID) (or .IsAvailableCommand (eq .Name "help")))}}
+  {{luCmd (rpad .Name .NamePadding) }} {{luDesc .Short}}{{end}}{{end}}{{end}}{{if not .AllChildCommandsHaveGroup}}
 
-	fmt.Println()
+{{luHeader "Additional Commands:"}}{{range $cmds}}{{if (and (eq .GroupID "") (or .IsAvailableCommand (eq .Name "help")))}}
+  {{luCmd (rpad .Name .NamePadding) }} {{luDesc .Short}}{{end}}{{end}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+
+{{luHeader "Flags:"}}
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
+
+{{luHeader "Global Flags:"}}
+{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
+
+Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
+  {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
+
+Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
+`
+}
+
+// Banner returns a colored "lu-hut <version>" prefix suitable for embedding
+// in a Cobra command's Long description.
+func Banner(version, tagline string) string {
+	return color.New(color.FgCyan, color.Bold).Sprint("lu-hut "+version) +
+		"\n" + color.New(color.FgHiWhite).Sprint(tagline)
 }

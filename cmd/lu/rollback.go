@@ -35,25 +35,5 @@ The backup is created automatically during the update process.`,
 		},
 	}
 
-	rollbackCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		fmt.Println()
-		color.Cyan("lu rollback - Rollback to the previous version")
-		fmt.Println()
-		fmt.Println("USAGE:")
-		fmt.Println("  lu rollback")
-		fmt.Println()
-		fmt.Println("FLAGS:")
-		fmt.Println("      --help     help for rollback")
-		fmt.Println()
-		fmt.Println("DESCRIPTION:")
-		fmt.Println("  This command will:")
-		fmt.Println("    1. Check if a backup version exists")
-		fmt.Println("    2. Restore the backup binary")
-		fmt.Println("    3. Verify the rollback was successful")
-		fmt.Println()
-		fmt.Println("  The backup is created automatically during the update process.")
-		fmt.Println()
-	})
-
 	return rollbackCmd
 }

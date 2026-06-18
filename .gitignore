@@ -37,3 +37,6 @@ go.work.sum
 
 temp/
 .DS_Store
+
+# Temporary files
+BACKLOG.md

@@ -33,6 +33,7 @@
 - **Octal Mode Display** - Option to display file modes in octal format.
 - **Symlink Target Display** - Symlink targets are shown inline as `name -> target`. Long targets are intelligently truncated and the tail is preserved.
 - **Nerd Font Icons** - Display file-type icons based on filename, extension, and directory name using Nerd Fonts. Auto-detected when running in a TTY, gracefully disabled in pipes and non-interactive environments.
+- **Shell Completions** - Tab-completion support for bash, zsh, and fish. Generate scripts with `lu completion <shell>`.
 
 ---
 
@@ -85,6 +86,30 @@ $ make install
 ```
 
 Ensure `~/bin` is included in your system `PATH` for seamless execution.
+
+## 🐚 Shell Completions
+
+lu supports tab-completion for bash, zsh, and fish. See detailed setup instructions for your shell:
+
+```bash
+lu completion --help
+```
+
+Quick examples:
+
+```bash
+# Bash
+$ eval "$(lu completion bash)"
+
+# Zsh
+$ mkdir -p ~/.zsh/completions
+$ lu completion zsh > ~/.zsh/completions/_lu
+
+# Fish
+$ lu completion fish > ~/.config/fish/completions/lu.fish
+```
+
+For Homebrew installs, completions may be configured automatically. See [Homebrew Shell Completion](https://docs.brew.sh/Shell-Completion) for details.
 
 ## 🚀 Updating & Rollback
 
@@ -221,11 +246,12 @@ $ lu -Tlo --icons=always
 
 ### Commands
 
-| Command       | Description                                      |
-| :------------ | :----------------------------------------------- |
-| `lu update`   | Update lu to the latest version                  |
-| `lu rollback` | Rollback to the previous version                 |
-| `lu version`  | Show version information (`-c` to check updates) |
+| Command         | Description                                      |
+| :-------------- | :----------------------------------------------- |
+| `lu update`     | Update lu to the latest version                  |
+| `lu rollback`   | Rollback to the previous version                 |
+| `lu version`    | Show version information (`-c` to check updates) |
+| `lu completion` | Generate shell completion scripts                |
 
 ### Flags
 

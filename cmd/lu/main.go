@@ -37,10 +37,11 @@ func newRootCommand() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "lu [path]",
 		Short: "A modern alternative to the Unix ls command with table formatting",
-		Long: `lu-hut is a powerful modern alternative to the Unix ls command with beautiful box-drawn tables or stunning tree format, intelligent colors, multiple sorting strategies, advanced filtering, and seamless git integration.
-
-GitHub: https://github.com/ipanardian/lu-hut
-Version: ` + constants.Version,
+		Long: terminal.Banner(
+			constants.Version,
+			"A modern alternative to the Unix ls command with box-drawn tables, tree view, intelligent colors, sorting, filtering, and git integration.\n\n"+
+				"GitHub: https://github.com/ipanardian/lu-hut",
+		),
 		Args:    cobra.MaximumNArgs(1),
 		Version: constants.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -67,6 +68,8 @@ Version: ` + constants.Version,
 		},
 	}
 
+	rootCmd.SetUsageTemplate(terminal.UsageTemplate())
+
 	rootCmd.Flags().StringVar(&cfg.ColorMode, "color", "", "color output mode (always|auto|never)")
 	rootCmd.Flags().StringVar(&cfg.IconMode, "icons", "auto", "when to display Nerd Font icons (always|auto|never)")
 	rootCmd.Flags().BoolVarP(&cfg.SortModified, "sort-modified", "t", false, "sort by modified time (newest first)")
@@ -86,15 +89,15 @@ Version: ` + constants.Version,
 	rootCmd.Flags().StringSliceVarP(&cfg.ExcludePatterns, "exclude", "x", nil, "exclude files matching glob patterns (quote the pattern)")
 	rootCmd.Flags().BoolVarP(&cfg.GitIgnore, "git-ignore", "G", false, "ignore files listed in .gitignore")
 
-	var help bool
-	rootCmd.Flags().BoolVar(&help, "help", false, "help for lu")
-	rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		terminal.ShowColoredHelp(cmd)
-	})
+	// Cobra's default help flag uses -h as the short form, which collides
+	// with --hidden. Register a stub --help flag (no short) up front so
+	// Cobra's InitDefaultHelpFlag sees it already exists and skips.
+	rootCmd.Flags().Bool("help", false, "help for lu")
 
 	rootCmd.AddCommand(newUpdateCommand())
 	rootCmd.AddCommand(newVersionCommand())
 	rootCmd.AddCommand(newRollbackCommand())
+	rootCmd.AddCommand(newCompletionCommand(rootCmd))
 
 	return rootCmd
 }

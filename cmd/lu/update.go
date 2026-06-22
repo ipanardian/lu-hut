@@ -24,6 +24,8 @@ This command will:
   4. Verify the installation
 
 The current binary will be backed up during the update process.`,
+		Example: `  lu update           # update if a newer version is available
+  lu update --force   # reinstall the latest version even if already current`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			color.Cyan("Checking for updates...")
 
@@ -65,28 +67,6 @@ The current binary will be backed up during the update process.`,
 
 	updateCmd.Flags().BoolVarP(&force, "force", "f", false, "force reinstall even if already on latest version")
 
-	updateCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		fmt.Println()
-		color.Cyan("lu update - Update lu to the latest version")
-		fmt.Println()
-		fmt.Println("USAGE:")
-		fmt.Println("  lu update [flags]")
-		fmt.Println()
-		fmt.Println("FLAGS:")
-		fmt.Println("  -f, --force    force reinstall even if already on latest version")
-		fmt.Println("      --help     help for update")
-		fmt.Println()
-		fmt.Println("DESCRIPTION:")
-		fmt.Println("  This command will:")
-		fmt.Println("    1. Check GitHub releases for the latest version")
-		fmt.Println("    2. Download the appropriate binary for your system")
-		fmt.Println("    3. Replace the current binary with the new version")
-		fmt.Println("    4. Verify the installation")
-		fmt.Println()
-		fmt.Println("  The current binary will be backed up during the update process.")
-		fmt.Println()
-	})
-
 	return updateCmd
 }
 
@@ -97,6 +77,8 @@ func newVersionCommand() *cobra.Command {
 		Use:   "version",
 		Short: "Show version information",
 		Long:  `Display the current version of lu-hut and optionally check for updates.`,
+		Example: `  lu version
+  lu version --check`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			currentVersion := updater.GetCurrentVersion()
 
@@ -131,23 +113,6 @@ func newVersionCommand() *cobra.Command {
 	}
 
 	versionCmd.Flags().BoolVarP(&checkUpdate, "check", "c", false, "check for available updates")
-
-	versionCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		fmt.Println()
-		color.Cyan("lu version - Show version information")
-		fmt.Println()
-		fmt.Println("USAGE:")
-		fmt.Println("  lu version [flags]")
-		fmt.Println()
-		fmt.Println("FLAGS:")
-		fmt.Println("  -c, --check    check for available updates")
-		fmt.Println("      --help     help for version")
-		fmt.Println()
-		fmt.Println("EXAMPLES:")
-		fmt.Println("  lu version")
-		fmt.Println("  lu version --check")
-		fmt.Println()
-	})
 
 	return versionCmd
 }

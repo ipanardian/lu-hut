@@ -220,25 +220,32 @@ func (d *Lister) listRecursive(ctx context.Context, rootPath string) error {
 		}
 
 		files := d.collectFiles(current.path, entries)
+
+		var dirsToTraverse []model.FileEntry
+		for _, file := range files {
+			if file.IsDir {
+				dirPath := filepath.Join(current.path, file.Name)
+				if d.filter.ShouldTraverseDir(file.Name, file.IsHidden, d.config.ShowHidden, dirPath) {
+					dirsToTraverse = append(dirsToTraverse, file)
+				}
+			}
+		}
+
 		files = d.filter.Apply(files, d.config.ShowHidden, current.path)
 		d.sortStrat.Sort(files, d.config.Reverse)
 
-		if len(files) == 0 {
-			continue
+		if len(files) > 0 {
+			renderer := renderer.NewTable(d.config)
+			renderer.Render(files, time.Now())
 		}
 
-		renderer := renderer.NewTable(d.config)
-		renderer.Render(files, time.Now())
-
-		for _, file := range files {
-			if file.IsDir {
-				nextLevel := current.level + 1
-				if maxDepth > 0 && nextLevel >= maxDepth {
-					continue
-				}
-				dirPath := filepath.Join(current.path, file.Name)
-				dirs = append(dirs, dirEntry{path: dirPath, level: nextLevel})
+		for _, file := range dirsToTraverse {
+			nextLevel := current.level + 1
+			if maxDepth > 0 && nextLevel >= maxDepth {
+				continue
 			}
+			dirPath := filepath.Join(current.path, file.Name)
+			dirs = append(dirs, dirEntry{path: dirPath, level: nextLevel})
 		}
 	}
 

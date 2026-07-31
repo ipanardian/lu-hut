@@ -237,6 +237,7 @@ func (r *Tree) renderTreeRecursive(ctx context.Context, path string, prefix stri
 
 func (r *Tree) hasMatchingDescendants(ctx context.Context, dirPath string) bool {
 	var result bool
+	baseDepth := strings.Count(dirPath, string(filepath.Separator))
 
 	if err := filepath.WalkDir(dirPath, func(path string, d os.DirEntry, err error) error {
 		if ctx.Err() != nil {
@@ -247,7 +248,8 @@ func (r *Tree) hasMatchingDescendants(ctx context.Context, dirPath string) bool 
 			return nil
 		}
 
-		if strings.Count(path, string(filepath.Separator))-strings.Count(dirPath, string(filepath.Separator)) > 5 {
+		currentDepth := strings.Count(path, string(filepath.Separator)) - baseDepth
+		if r.config.MaxDepth > 0 && currentDepth > r.config.MaxDepth {
 			return filepath.SkipDir
 		}
 

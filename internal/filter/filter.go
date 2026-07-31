@@ -87,3 +87,21 @@ func (f *Filter) IsGitIgnored(path string, isDir bool) bool {
 	}
 	return f.gitIgnore.IsIgnored(path, isDir)
 }
+
+func (f *Filter) ShouldTraverseDir(name string, isHidden bool, showHidden bool, path string) bool {
+	if !showHidden && isHidden {
+		return false
+	}
+	if name == ".git" {
+		return false
+	}
+	if f.shouldExclude(name) {
+		return false
+	}
+	if f.gitIgnore != nil {
+		if f.gitIgnore.IsIgnored(path, true) {
+			return false
+		}
+	}
+	return true
+}

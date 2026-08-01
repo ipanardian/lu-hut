@@ -2,7 +2,10 @@ package updater
 
 import (
 	"archive/tar"
+	"bufio"
 	"compress/gzip"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -68,9 +71,29 @@ func PerformUpdate(release *GitHubRelease) error {
 		return fmt.Errorf("download failed with status %d", resp.StatusCode)
 	}
 
+	archiveData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read archive: %w", err)
+	}
+
+	color.Cyan("Verifying checksum...")
+
+	checksumURL := getChecksumURL(release)
+	if checksumURL != "" {
+		expectedChecksum, err := downloadChecksum(checksumURL, GetArchiveName(release.TagName))
+		if err != nil {
+			return fmt.Errorf("failed to download checksums: %w", err)
+		}
+
+		actualChecksum := calculateSHA256(archiveData)
+		if actualChecksum != expectedChecksum {
+			return fmt.Errorf("checksum verification failed: expected %s, got %s", expectedChecksum, actualChecksum)
+		}
+	}
+
 	color.Cyan("Extracting binary...")
 
-	gzr, err := gzip.NewReader(resp.Body)
+	gzr, err := gzip.NewReader(strings.NewReader(string(archiveData)))
 	if err != nil {
 		return fmt.Errorf("failed to create gzip reader: %w", err)
 	}
@@ -243,4 +266,67 @@ func updateCacheFile(cacheFile string) {
 	}
 
 	_ = os.WriteFile(cacheFile, []byte(time.Now().Format(time.RFC3339)), 0644)
+}
+
+func getChecksumURL(release *GitHubRelease) string {
+	for _, asset := range release.Assets {
+		if asset.Name == "checksums.txt" {
+			return asset.BrowserDownloadURL
+		}
+	}
+	return ""
+}
+
+func downloadChecksum(checksumURL, archiveName string) (string, error) {
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	resp, err := client.Get(checksumURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to download checksums: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("checksums download failed with status %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read checksums: %w", err)
+	}
+
+	return parseChecksumFromContent(string(body), archiveName)
+}
+
+func parseChecksumFromContent(content, archiveName string) (string, error) {
+	scanner := bufio.NewScanner(strings.NewReader(content))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+
+		parts := strings.Fields(line)
+		if len(parts) == 2 {
+			hash := parts[0]
+			filename := parts[1]
+
+			if filename == archiveName {
+				return hash, nil
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("failed to read checksums: %w", err)
+	}
+
+	return "", fmt.Errorf("checksum not found for %s", archiveName)
+}
+
+func calculateSHA256(data []byte) string {
+	hash := sha256.Sum256(data)
+	return hex.EncodeToString(hash[:])
 }

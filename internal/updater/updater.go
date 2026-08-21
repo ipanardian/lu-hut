@@ -3,6 +3,7 @@ package updater
 import (
 	"archive/tar"
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
@@ -38,6 +39,11 @@ func PerformUpdate(release *GitHubRelease) error {
 		color.Yellow("⚠ lu-hut was installed via Homebrew")
 		color.Cyan("→ Please use 'brew upgrade lu-hut' to update")
 		return nil
+	}
+
+	checksumURL := getChecksumURL(release)
+	if checksumURL == "" {
+		return fmt.Errorf("release does not contain checksums.txt")
 	}
 
 	downloadURL, err := FindAssetURL(release)
@@ -78,22 +84,19 @@ func PerformUpdate(release *GitHubRelease) error {
 
 	color.Cyan("Verifying checksum...")
 
-	checksumURL := getChecksumURL(release)
-	if checksumURL != "" {
-		expectedChecksum, err := downloadChecksum(checksumURL, GetArchiveName(release.TagName))
-		if err != nil {
-			return fmt.Errorf("failed to download checksums: %w", err)
-		}
+	expectedChecksum, err := downloadChecksum(checksumURL, GetArchiveName(release.TagName))
+	if err != nil {
+		return fmt.Errorf("failed to download checksums: %w", err)
+	}
 
-		actualChecksum := calculateSHA256(archiveData)
-		if actualChecksum != expectedChecksum {
-			return fmt.Errorf("checksum verification failed: expected %s, got %s", expectedChecksum, actualChecksum)
-		}
+	actualChecksum := calculateSHA256(archiveData)
+	if actualChecksum != expectedChecksum {
+		return fmt.Errorf("checksum verification failed: expected %s, got %s", expectedChecksum, actualChecksum)
 	}
 
 	color.Cyan("Extracting binary...")
 
-	gzr, err := gzip.NewReader(strings.NewReader(string(archiveData)))
+	gzr, err := gzip.NewReader(bytes.NewReader(archiveData))
 	if err != nil {
 		return fmt.Errorf("failed to create gzip reader: %w", err)
 	}
@@ -310,10 +313,10 @@ func parseChecksumFromContent(content, archiveName string) (string, error) {
 
 		parts := strings.Fields(line)
 		if len(parts) == 2 {
-			hash := parts[0]
+			hash := strings.ToLower(parts[0])
 			filename := parts[1]
 
-			if filename == archiveName {
+			if filename == archiveName && isSHA256(hash) {
 				return hash, nil
 			}
 		}
@@ -329,4 +332,13 @@ func parseChecksumFromContent(content, archiveName string) (string, error) {
 func calculateSHA256(data []byte) string {
 	hash := sha256.Sum256(data)
 	return hex.EncodeToString(hash[:])
+}
+
+func isSHA256(value string) bool {
+	if len(value) != sha256.Size*2 {
+		return false
+	}
+
+	_, err := hex.DecodeString(value)
+	return err == nil
 }

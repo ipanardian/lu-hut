@@ -12,7 +12,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"os"
 
 	"github.com/ipanardian/lu-hut/internal/config"
@@ -27,7 +27,8 @@ func main() {
 	go updater.CheckAndNotify()
 
 	if err := newRootCommand().Execute(); err != nil {
-		log.Fatal(err)
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		os.Exit(1)
 	}
 }
 
@@ -35,36 +36,28 @@ func newRootCommand() *cobra.Command {
 	cfg := config.NewDefaultConfig()
 
 	rootCmd := &cobra.Command{
-		Use:   "lu [path]",
-		Short: "A modern alternative to the Unix ls command with table formatting",
+		Use:           "lu [paths...]",
+		Short:         "A modern alternative to the Unix ls command with table formatting",
+		SilenceUsage:  true,
+		SilenceErrors: true,
 		Long: terminal.Banner(
 			constants.Version,
 			"A modern alternative to the Unix ls command with box-drawn tables, tree view, intelligent colors, sorting, filtering, and git integration.\n\n"+
 				"GitHub: https://github.com/ipanardian/lu-hut",
 		),
-		Args:    cobra.MaximumNArgs(1),
+		Args:    cobra.ArbitraryArgs,
 		Version: constants.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			path := "."
-			if len(args) > 0 {
-				path = args[0]
+			if len(args) == 0 {
+				args = []string{"."}
 			}
 
 			if err := cfg.Validate(); err != nil {
 				return err
 			}
 
-			if path != "." {
-				if info, err := os.Stat(path); err == nil && !info.IsDir() {
-					if len(cfg.IncludePatterns) > 0 {
-						cfg.IncludePatterns = append(cfg.IncludePatterns, path)
-						path = "."
-					}
-				}
-			}
-
-			lister := lister.New(cfg)
-			return lister.List(path)
+			lst := lister.New(cfg)
+			return lst.ListPaths(args)
 		},
 	}
 

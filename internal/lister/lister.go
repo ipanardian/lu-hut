@@ -9,7 +9,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/fatih/color"
@@ -64,7 +63,7 @@ func (d *Lister) List(path string) error {
 	defer cancel()
 
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigChan, terminationSignals()...)
 	defer signal.Stop(sigChan)
 	go func() {
 		select {

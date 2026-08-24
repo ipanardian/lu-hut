@@ -75,6 +75,29 @@ brew upgrade lu-hut
 curl -sSL https://raw.githubusercontent.com/ipanardian/lu-hut/main/install.sh | bash
 ```
 
+### Windows
+
+Download the latest `lu-hut_<version>_Windows_x86_64.tar.gz` from the
+[releases](https://github.com/ipanardian/lu-hut/releases) page, extract
+`lu.exe`, and place it in a directory on your `PATH`:
+
+```powershell
+# PowerShell (from the extracted directory)
+$dest = "$env:LOCALAPPDATA\lu-hut"
+New-Item -ItemType Directory -Force -Path $dest | Out-Null
+Move-Item -Force .\lu.exe $dest\lu.exe
+$env:Path += ";$dest"
+```
+
+Or build from source (see below) and use `make build-windows`.
+
+**PowerShell completion:**
+
+```powershell
+lu completion powershell > "$env:USERPROFILE\lu.ps1"
+Add-Content $PROFILE ". '$env:USERPROFILE\lu.ps1'"
+```
+
 ### Build from Source
 
 If you want to get the latest update then you can build from source:

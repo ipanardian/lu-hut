@@ -1,15 +1,15 @@
-package lister
+//go:build !windows
+
+package renderer
 
 import (
 	"os"
 	"os/user"
 	"strconv"
 	"syscall"
-
-	"github.com/fatih/color"
 )
 
-func extractUserGroup(fileInfo os.FileInfo) (string, string) {
+func (r *Tree) extractUserGroup(fileInfo os.FileInfo) (string, string) {
 	if stat, ok := fileInfo.Sys().(*syscall.Stat_t); ok {
 		u, errU := user.LookupId(strconv.Itoa(int(stat.Uid)))
 		g, errG := user.LookupGroupId(strconv.Itoa(int(stat.Gid)))
@@ -24,7 +24,7 @@ func extractUserGroup(fileInfo os.FileInfo) (string, string) {
 			groupname = g.Name
 		}
 
-		return color.New(color.FgWhite).Sprint(username), color.New(color.FgWhite).Sprint(groupname)
+		return username, groupname
 	}
-	return color.New(color.FgWhite).Sprint("unknown"), color.New(color.FgWhite).Sprint("unknown")
+	return "unknown", "unknown"
 }

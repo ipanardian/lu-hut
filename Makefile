@@ -2,7 +2,7 @@
 # GitHub: https://github.com/ipanardian/lu-hut
 # Author: Ipan Ardian
 
-.PHONY: build build-linux build-mac build-all install install-linux install-mac clean test help
+.PHONY: build build-linux build-mac build-windows build-all install install-linux install-mac clean test help
 
 # Default target
 all: build
@@ -20,8 +20,13 @@ build-mac:
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o bin/lu-darwin-amd64 ./cmd/lu
 	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o bin/lu-darwin-arm64 ./cmd/lu
 
+# Build for Windows
+build-windows:
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o bin/lu-windows-amd64.exe ./cmd/lu
+	CGO_ENABLED=0 GOOS=windows GOARCH=arm64 go build -ldflags="-s -w" -o bin/lu-windows-arm64.exe ./cmd/lu
+
 # Build for all platforms
-build-all: build-linux build-mac
+build-all: build-linux build-mac build-windows
 
 # Install to ~/bin (current platform)
 install: build

@@ -5,11 +5,8 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/user"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/ipanardian/lu-hut/internal/config"
@@ -275,26 +272,6 @@ func (r *Tree) hasMatchingDescendants(ctx context.Context, dirPath string) bool 
 	}
 
 	return result
-}
-
-func (r *Tree) extractUserGroup(fileInfo os.FileInfo) (string, string) {
-	if stat, ok := fileInfo.Sys().(*syscall.Stat_t); ok {
-		u, errU := user.LookupId(strconv.Itoa(int(stat.Uid)))
-		g, errG := user.LookupGroupId(strconv.Itoa(int(stat.Gid)))
-
-		username := "unknown"
-		groupname := "unknown"
-
-		if errU == nil {
-			username = u.Username
-		}
-		if errG == nil {
-			groupname = g.Name
-		}
-
-		return username, groupname
-	}
-	return "unknown", "unknown"
 }
 
 func (r *Tree) calculateColumnWidths(ctx context.Context, path string, level int, now time.Time) error {

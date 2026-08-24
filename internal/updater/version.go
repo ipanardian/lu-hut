@@ -107,7 +107,11 @@ func GetBinaryName() string {
 	osName := runtime.GOOS
 	arch := runtime.GOARCH
 
-	return fmt.Sprintf("lu-%s-%s", osName, arch)
+	name := fmt.Sprintf("lu-%s-%s", osName, arch)
+	if osName == "windows" {
+		name += ".exe"
+	}
+	return name
 }
 
 func GetArchiveName(version string) string {

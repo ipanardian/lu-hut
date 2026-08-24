@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -15,6 +16,27 @@ import (
 )
 
 const downloadTimeout = 5 * time.Minute
+
+// binaryName returns the binary filename inside release archives for the
+// current platform. GoReleaser names Windows binaries with a .exe suffix.
+func binaryName() string {
+	if runtime.GOOS == "windows" {
+		return "lu.exe"
+	}
+	return "lu"
+}
+
+// renameWithReplace moves src to dst, replacing dst if it already exists.
+// os.Rename on Windows fails when dst exists (unlike the atomic replace on
+// Unix), so an existing destination must be removed first.
+func renameWithReplace(src, dst string) error {
+	if runtime.GOOS == "windows" {
+		if err := os.Remove(dst); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+	}
+	return os.Rename(src, dst)
+}
 
 func IsHomebrewInstallation() bool {
 	execPath, err := os.Executable()
@@ -88,7 +110,7 @@ func PerformUpdate(release *GitHubRelease) error {
 			return fmt.Errorf("failed to read tar: %w", err)
 		}
 
-		if header.Name == "lu" {
+		if header.Name == binaryName() {
 			binaryData, err = io.ReadAll(tr)
 			if err != nil {
 				return fmt.Errorf("failed to read binary from archive: %w", err)
@@ -98,7 +120,7 @@ func PerformUpdate(release *GitHubRelease) error {
 	}
 
 	if len(binaryData) == 0 {
-		return fmt.Errorf("binary 'lu' not found in archive")
+		return fmt.Errorf("binary %q not found in archive", binaryName())
 	}
 
 	tmpFile, err := os.CreateTemp("", "lu-update-*")
@@ -119,13 +141,13 @@ func PerformUpdate(release *GitHubRelease) error {
 	}
 
 	backupPath := execPath + ".backup"
-	if err := os.Rename(execPath, backupPath); err != nil {
+	if err := renameWithReplace(execPath, backupPath); err != nil {
 		return fmt.Errorf("failed to backup current binary: %w", err)
 	}
 
-	if err := os.Rename(tmpPath, execPath); err != nil {
-		if err := os.Rename(backupPath, execPath); err != nil {
-			return fmt.Errorf("failed to replace binary: %w", err)
+	if err := renameWithReplace(tmpPath, execPath); err != nil {
+		if restoreErr := renameWithReplace(backupPath, execPath); restoreErr != nil {
+			return fmt.Errorf("failed to replace binary and failed to restore backup (restore: %v): %w", restoreErr, err)
 		}
 		return fmt.Errorf("failed to replace binary: %w", err)
 	}
@@ -160,12 +182,12 @@ func PerformRollback() error {
 	}
 
 	tmpPath := execPath + ".tmp"
-	if err := os.Rename(execPath, tmpPath); err != nil {
+	if err := renameWithReplace(execPath, tmpPath); err != nil {
 		return fmt.Errorf("failed to backup current binary: %w", err)
 	}
 
-	if err := os.Rename(backupPath, execPath); err != nil {
-		if restoreErr := os.Rename(tmpPath, execPath); restoreErr != nil {
+	if err := renameWithReplace(backupPath, execPath); err != nil {
+		if restoreErr := renameWithReplace(tmpPath, execPath); restoreErr != nil {
 			return fmt.Errorf("failed to restore backup and rollback failed: %w", err)
 		}
 		return fmt.Errorf("failed to restore backup: %w", err)

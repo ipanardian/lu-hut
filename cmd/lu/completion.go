@@ -9,7 +9,7 @@ import (
 
 func newCompletionCommand(rootCmd *cobra.Command) *cobra.Command {
 	completionCmd := &cobra.Command{
-		Use:   "completion [bash|zsh|fish]",
+		Use:   "completion [bash|zsh|fish|powershell]",
 		Short: "Generate shell completion scripts",
 		Long: `Generate shell completion scripts for lu.
 
@@ -59,10 +59,21 @@ Generate a lu.fish completion script:
 Then reload your shell:
 
   $ exec fish
+
+### powershell
+
+Generate a lu PowerShell completion script:
+
+  PS> lu completion powershell > lu.ps1
+
+Then load it in your PowerShell profile:
+
+  PS> Add-Content $PROFILE ". 'C:\path\to\lu.ps1'"
 `,
 		Example: `  lu completion bash        # output bash completion script
   lu completion zsh         # output zsh completion script
   lu completion fish        # output fish completion script
+  lu completion powershell  # output PowerShell completion script
   lu completion bash > /etc/bash_completion.d/lu  # install for bash`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -73,8 +84,10 @@ Then reload your shell:
 				return rootCmd.GenZshCompletion(os.Stdout)
 			case "fish":
 				return rootCmd.GenFishCompletion(os.Stdout, true)
+			case "powershell":
+				return rootCmd.GenPowerShellCompletion(os.Stdout)
 			default:
-				return fmt.Errorf("unsupported shell: %q (supported: bash, zsh, fish)", args[0])
+				return fmt.Errorf("unsupported shell: %q (supported: bash, zsh, fish, powershell)", args[0])
 			}
 		},
 	}

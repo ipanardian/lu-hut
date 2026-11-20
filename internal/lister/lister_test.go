@@ -124,6 +124,39 @@ func TestListPathsFiltersFileOperands(t *testing.T) {
 	}
 }
 
+func TestTreeIncludePrunesExcludedBranches(t *testing.T) {
+	t.Chdir(t.TempDir())
+	for _, dir := range []string{"src/keep", "src/vendor", "src/excluded-only/vendor", "src/ignored-only"} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "main.go"), nil, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile("src/.gitignore", []byte("ignored-only/main.go\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg := config.NewDefaultConfig()
+	cfg.Tree, cfg.GitIgnore = true, true
+	cfg.ColorMode, cfg.IconMode = "never", "never"
+	cfg.IncludePatterns = []string{"*.go"}
+	cfg.ExcludePatterns = []string{"vendor"}
+	var err error
+	output := captureStdout(t, func() { err = New(cfg).ListPaths([]string{"src"}) })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(output, "keep/") || !strings.Contains(output, "main.go") {
+		t.Errorf("tree output = %q, want keep/main.go", output)
+	}
+	for _, name := range []string{"vendor/", "excluded-only/", "ignored-only/"} {
+		if strings.Contains(output, name) {
+			t.Errorf("tree output = %q, unexpectedly contains %q", output, name)
+		}
+	}
+}
+
 func captureStdout(t *testing.T, fn func()) string {
 	t.Helper()
 	original := os.Stdout

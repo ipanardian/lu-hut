@@ -132,38 +132,23 @@ func (r *Tree) renderTreeRecursive(ctx context.Context, path string, prefix stri
 	}
 
 	if r.filter != nil {
-		if r.filter.HasIncludePatterns() {
-			var filtered []model.FileEntry
-
-			for _, file := range files {
-				if r.filter.IsGitIgnored(file.Path, file.IsDir) {
-					continue
-				}
+		var filtered []model.FileEntry
+		for _, file := range files {
+			if r.filter.ShouldExclude(file.Name) || r.filter.IsGitIgnored(file.Path, file.IsDir) {
+				continue
+			}
+			if r.filter.HasIncludePatterns() {
 				if file.IsDir {
-					if r.hasMatchingDescendants(ctx, file.Path) {
-						filtered = append(filtered, file)
+					if !r.hasMatchingDescendants(ctx, file.Path) {
+						continue
 					}
-				} else {
-					if r.filter.ShouldInclude(file.Name) && !r.filter.ShouldExclude(file.Name) {
-						filtered = append(filtered, file)
-					}
-				}
-			}
-
-			files = filtered
-		} else {
-			var filtered []model.FileEntry
-			for _, file := range files {
-				if r.filter.ShouldExclude(file.Name) {
+				} else if !r.filter.ShouldInclude(file.Name) {
 					continue
 				}
-				if r.filter.IsGitIgnored(file.Path, file.IsDir) {
-					continue
-				}
-				filtered = append(filtered, file)
 			}
-			files = filtered
+			filtered = append(filtered, file)
 		}
+		files = filtered
 	}
 
 	if r.sortStrategy != nil {
@@ -253,18 +238,17 @@ func (r *Tree) hasMatchingDescendants(ctx context.Context, dirPath string) bool 
 			return filepath.SkipDir
 		}
 
-		if !r.config.ShowHidden && strings.HasPrefix(d.Name(), ".") {
+		if (!r.config.ShowHidden && strings.HasPrefix(d.Name(), ".")) ||
+			r.filter.ShouldExclude(d.Name()) || r.filter.IsGitIgnored(path, d.IsDir()) {
 			if d.IsDir() {
 				return filepath.SkipDir
 			}
 			return nil
 		}
 
-		if !d.IsDir() {
-			if r.filter.ShouldInclude(d.Name()) && !r.filter.ShouldExclude(d.Name()) {
-				result = true
-				return filepath.SkipAll
-			}
+		if !d.IsDir() && r.filter.ShouldInclude(d.Name()) {
+			result = true
+			return filepath.SkipAll
 		}
 
 		return nil

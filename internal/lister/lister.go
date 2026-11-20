@@ -31,6 +31,11 @@ type Lister struct {
 	sortStrat sort.Strategy
 }
 
+type fileOperand struct {
+	path string
+	info fs.FileInfo
+}
+
 func New(cfg config.Config) *Lister {
 	switch cfg.ColorMode {
 	case "never":
@@ -79,7 +84,7 @@ func (d *Lister) ListPaths(paths []string) error {
 		}
 	}()
 
-	var filePaths []string
+	var filePaths []fileOperand
 	var dirPaths []string
 	var pathErrors []error
 
@@ -89,16 +94,25 @@ func (d *Lister) ListPaths(paths []string) error {
 			pathErrors = append(pathErrors, fmt.Errorf("cannot resolve '%s': %w", p, err))
 			continue
 		}
-		info, err := os.Stat(absPath)
+		statPath := absPath
+		// filepath.Abs cleans the path, but a trailing slash requires a directory.
+		if strings.HasSuffix(p, string(filepath.Separator)) && !strings.HasSuffix(absPath, string(filepath.Separator)) {
+			statPath += string(filepath.Separator)
+		}
+		info, err := os.Lstat(statPath)
 		if err != nil {
 			pathErrors = append(pathErrors, fmt.Errorf("cannot access '%s': %w", p, err))
 			continue
 		}
 		if info.IsDir() {
 			dirPaths = append(dirPaths, absPath)
-		} else {
-			filePaths = append(filePaths, absPath)
+			continue
 		}
+		name := filepath.Base(absPath)
+		if d.filter.ShouldExclude(name) || (d.filter.HasIncludePatterns() && !d.filter.ShouldInclude(name)) {
+			continue
+		}
+		filePaths = append(filePaths, fileOperand{path: absPath, info: info})
 	}
 
 	multipleSources := len(filePaths)+len(dirPaths) > 1
@@ -252,18 +266,13 @@ func (d *Lister) listRecursive(ctx context.Context, rootPath string) error {
 	return nil
 }
 
-func (d *Lister) collectFileEntries(paths []string) []model.FileEntry {
+func (d *Lister) collectFileEntries(paths []fileOperand) []model.FileEntry {
 	cwd, _ := os.Getwd()
 	gitRepos := make(map[string]*git.Repository)
 
 	var files []model.FileEntry
-	for _, absPath := range paths {
-		info, err := os.Stat(absPath)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: cannot stat '%s': %v\n", absPath, err)
-			continue
-		}
-
+	for _, operand := range paths {
+		absPath, info := operand.path, operand.info
 		parentDir := filepath.Dir(absPath)
 		relPath, _ := filepath.Rel(cwd, absPath)
 		if relPath == "" {

@@ -106,9 +106,13 @@ func (d *Lister) ListPaths(paths []string) error {
 		}
 		if info.IsDir() {
 			dirPaths = append(dirPaths, absPath)
-		} else {
-			filePaths = append(filePaths, fileOperand{path: absPath, info: info})
+			continue
 		}
+		name := filepath.Base(absPath)
+		if d.filter.ShouldExclude(name) || (d.filter.HasIncludePatterns() && !d.filter.ShouldInclude(name)) {
+			continue
+		}
+		filePaths = append(filePaths, fileOperand{path: absPath, info: info})
 	}
 
 	multipleSources := len(filePaths)+len(dirPaths) > 1

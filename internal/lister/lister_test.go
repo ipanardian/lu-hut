@@ -81,6 +81,49 @@ func TestListPathsSymlinks(t *testing.T) {
 	}
 }
 
+func TestListPathsFiltersFileOperands(t *testing.T) {
+	t.Chdir(t.TempDir())
+	if err := os.Mkdir("src", 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"readme.txt", "src/main.go", "src/skip.go", "src/notes.txt"} {
+		if err := os.WriteFile(name, nil, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, tt := range []struct {
+		name   string
+		args   []string
+		want   string
+		absent []string
+	}{
+		{"files", []string{"readme.txt", "src/main.go", "src/skip.go"}, "src/main.go", []string{"readme.txt", "skip.go"}},
+		{"reversed", []string{"src/main.go", "readme.txt"}, "src/main.go", []string{"readme.txt"}},
+		{"mixed", []string{"src", "readme.txt"}, "main.go", []string{"readme.txt", "skip.go", "notes.txt"}},
+		{"all filtered", []string{"readme.txt", "src/skip.go"}, "", []string{"readme.txt", "skip.go", "Name"}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := config.NewDefaultConfig()
+			cfg.ColorMode, cfg.IconMode = "never", "never"
+			cfg.IncludePatterns = []string{"*.go"}
+			cfg.ExcludePatterns = []string{"skip.go"}
+			var err error
+			output := captureStdout(t, func() { err = New(cfg).ListPaths(tt.args) })
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(output, tt.want) {
+				t.Errorf("ListPaths() output = %q, want %q", output, tt.want)
+			}
+			for _, name := range tt.absent {
+				if strings.Contains(output, name) {
+					t.Errorf("ListPaths() output = %q, unexpectedly contains %q", output, name)
+				}
+			}
+		})
+	}
+}
+
 func captureStdout(t *testing.T, fn func()) string {
 	t.Helper()
 	original := os.Stdout

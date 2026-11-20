@@ -71,8 +71,45 @@ download_binary() {
     TMP_DIR=$(mktemp -d)
     trap "rm -rf $TMP_DIR" EXIT
 
-    if ! curl -L -o "$TMP_DIR/${ARCHIVE_NAME}" "$DOWNLOAD_URL"; then
+    if ! curl -fsSL -o "$TMP_DIR/${ARCHIVE_NAME}" "$DOWNLOAD_URL"; then
         print_error "Failed to download archive"
+        exit 1
+    fi
+
+    print_info "Verifying checksum..."
+    if ! curl -fsSL -o "$TMP_DIR/checksums.txt" "https://github.com/${REPO}/releases/download/v${VERSION}/checksums.txt"; then
+        print_error "Failed to download checksums"
+        exit 1
+    fi
+
+    EXPECTED_CHECKSUM=$(awk -v archive="$ARCHIVE_NAME" '$2 == archive { print $1; exit }' "$TMP_DIR/checksums.txt")
+    case "$EXPECTED_CHECKSUM" in
+        "")
+            print_error "Checksum not found for $ARCHIVE_NAME"
+            exit 1
+            ;;
+        *[!0-9a-fA-F]*)
+            print_error "Invalid checksum for $ARCHIVE_NAME"
+            exit 1
+            ;;
+    esac
+    if [ "${#EXPECTED_CHECKSUM}" -ne 64 ]; then
+        print_error "Invalid checksum for $ARCHIVE_NAME"
+        exit 1
+    fi
+    EXPECTED_CHECKSUM=$(printf '%s' "$EXPECTED_CHECKSUM" | tr '[:upper:]' '[:lower:]')
+
+    if command -v sha256sum >/dev/null 2>&1; then
+        ACTUAL_CHECKSUM=$(sha256sum "$TMP_DIR/${ARCHIVE_NAME}" | awk '{print $1}')
+    elif command -v shasum >/dev/null 2>&1; then
+        ACTUAL_CHECKSUM=$(shasum -a 256 "$TMP_DIR/${ARCHIVE_NAME}" | awk '{print $1}')
+    else
+        print_error "No SHA-256 utility found (sha256sum or shasum)"
+        exit 1
+    fi
+
+    if [ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]; then
+        print_error "Checksum verification failed"
         exit 1
     fi
 

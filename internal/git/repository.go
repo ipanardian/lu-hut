@@ -54,7 +54,9 @@ func (g *Repository) loadAllStatus() error {
 		}
 
 		var status string
-		if worktree != ' ' && worktree != '?' {
+		if staging == '?' && worktree == '?' {
+			status = "?"
+		} else if worktree != ' ' && worktree != '?' {
 			switch worktree {
 			case 'M':
 				status = "M"
@@ -80,8 +82,6 @@ func (g *Repository) loadAllStatus() error {
 			case 'C':
 				status = "C"
 			}
-		} else if worktree == '?' {
-			status = "?"
 		}
 
 		if status != "" {

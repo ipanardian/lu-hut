@@ -19,7 +19,7 @@ builds:
       - arm64
     ldflags:
       - -s -w
-      - -X github.com/ipanardian/lu-hut/internal/constants.Version={{.Version}}
+      - -X github.com/ipanardian/lu-hut/internal/constants.Version={{.Tag}}
 
 archives:
   - id: lu-archive

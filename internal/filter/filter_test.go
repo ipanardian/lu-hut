@@ -80,3 +80,47 @@ func TestFileFilter(t *testing.T) {
 		}
 	})
 }
+
+func TestShouldTraverseDir(t *testing.T) {
+	t.Run("hidden dir excluded when showHidden false", func(t *testing.T) {
+		f := NewFilter(nil, nil, nil)
+		if f.ShouldTraverseDir(".git", true, false, "/tmp/.git") {
+			t.Error("expected hidden dir to not be traversed")
+		}
+	})
+
+	t.Run("hidden dir included when showHidden true", func(t *testing.T) {
+		f := NewFilter(nil, nil, nil)
+		if !f.ShouldTraverseDir(".config", true, true, "/tmp/.config") {
+			t.Error("expected hidden dir to be traversed when showHidden is true")
+		}
+	})
+
+	t.Run(".git dir always excluded", func(t *testing.T) {
+		f := NewFilter(nil, nil, nil)
+		if f.ShouldTraverseDir(".git", true, true, "/tmp/.git") {
+			t.Error("expected .git dir to not be traversed even with showHidden true")
+		}
+	})
+
+	t.Run("excluded dir not traversed", func(t *testing.T) {
+		f := NewFilter(nil, []string{"vendor"}, nil)
+		if f.ShouldTraverseDir("vendor", false, false, "/tmp/vendor") {
+			t.Error("expected excluded dir to not be traversed")
+		}
+	})
+
+	t.Run("include pattern does not prevent traversal", func(t *testing.T) {
+		f := NewFilter([]string{"*.go"}, nil, nil)
+		if !f.ShouldTraverseDir("internal", false, false, "/tmp/internal") {
+			t.Error("expected dir to be traversed regardless of include pattern")
+		}
+	})
+
+	t.Run("normal dir traversed", func(t *testing.T) {
+		f := NewFilter([]string{"*.go"}, nil, nil)
+		if !f.ShouldTraverseDir("src", false, false, "/tmp/src") {
+			t.Error("expected normal dir to be traversed")
+		}
+	})
+}

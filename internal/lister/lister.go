@@ -3,6 +3,7 @@ package lister
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -28,6 +29,11 @@ type Lister struct {
 	gitIgnore *gitignore.Matcher
 	filter    *filter.Filter
 	sortStrat sort.Strategy
+}
+
+type fileOperand struct {
+	path string
+	info fs.FileInfo
 }
 
 func New(cfg config.Config) *Lister {
@@ -60,6 +66,10 @@ func New(cfg config.Config) *Lister {
 }
 
 func (d *Lister) List(path string) error {
+	return d.ListPaths([]string{path})
+}
+
+func (d *Lister) ListPaths(paths []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -74,19 +84,62 @@ func (d *Lister) List(path string) error {
 		}
 	}()
 
-	absPath, err := filepath.Abs(path)
-	if err != nil {
-		return err
+	var filePaths []fileOperand
+	var dirPaths []string
+	var pathErrors []error
+
+	for _, p := range paths {
+		absPath, err := filepath.Abs(p)
+		if err != nil {
+			pathErrors = append(pathErrors, fmt.Errorf("cannot resolve '%s': %w", p, err))
+			continue
+		}
+		statPath := absPath
+		// filepath.Abs cleans the path, but a trailing slash requires a directory.
+		if strings.HasSuffix(p, string(filepath.Separator)) && !strings.HasSuffix(absPath, string(filepath.Separator)) {
+			statPath += string(filepath.Separator)
+		}
+		info, err := os.Lstat(statPath)
+		if err != nil {
+			pathErrors = append(pathErrors, fmt.Errorf("cannot access '%s': %w", p, err))
+			continue
+		}
+		if info.IsDir() {
+			dirPaths = append(dirPaths, absPath)
+			continue
+		}
+		name := filepath.Base(absPath)
+		if d.filter.ShouldExclude(name) || (d.filter.HasIncludePatterns() && !d.filter.ShouldInclude(name)) {
+			continue
+		}
+		filePaths = append(filePaths, fileOperand{path: absPath, info: info})
 	}
 
-	info, err := os.Stat(absPath)
-	if err != nil {
-		return err
-	}
-	if !info.IsDir() {
-		return fmt.Errorf("path %s is not a directory", absPath)
+	multipleSources := len(filePaths)+len(dirPaths) > 1
+
+	if len(filePaths) > 0 {
+		files := d.collectFileEntries(filePaths)
+		d.sortStrat.Sort(files, d.config.Reverse)
+		tableRenderer := renderer.NewTable(d.config)
+		tableRenderer.Render(files, time.Now())
 	}
 
+	for i, dirPath := range dirPaths {
+		if multipleSources {
+			if i > 0 || len(filePaths) > 0 {
+				fmt.Println()
+			}
+			fmt.Printf("%s:\n", color.New(color.FgCyan, color.Bold).Sprint(dirPath))
+		}
+		if err := d.listSingle(ctx, dirPath); err != nil {
+			pathErrors = append(pathErrors, fmt.Errorf("cannot list '%s': %w", dirPath, err))
+		}
+	}
+
+	return errors.Join(pathErrors...)
+}
+
+func (d *Lister) listSingle(ctx context.Context, absPath string) error {
 	if d.config.ShowGit {
 		d.gitRepo, _ = git.NewRepository(absPath)
 	}
@@ -113,8 +166,8 @@ func (d *Lister) List(path string) error {
 	files = d.filter.Apply(files, d.config.ShowHidden, absPath)
 	d.sortStrat.Sort(files, d.config.Reverse)
 
-	renderer := renderer.NewTable(d.config)
-	renderer.Render(files, time.Now())
+	tableRenderer := renderer.NewTable(d.config)
+	tableRenderer.Render(files, time.Now())
 
 	return nil
 }
@@ -181,29 +234,78 @@ func (d *Lister) listRecursive(ctx context.Context, rootPath string) error {
 		}
 
 		files := d.collectFiles(current.path, entries)
+
+		var dirsToTraverse []model.FileEntry
+		for _, file := range files {
+			if file.IsDir {
+				dirPath := filepath.Join(current.path, file.Name)
+				if d.filter.ShouldTraverseDir(file.Name, file.IsHidden, d.config.ShowHidden, dirPath) {
+					dirsToTraverse = append(dirsToTraverse, file)
+				}
+			}
+		}
+
 		files = d.filter.Apply(files, d.config.ShowHidden, current.path)
 		d.sortStrat.Sort(files, d.config.Reverse)
 
-		if len(files) == 0 {
-			continue
+		if len(files) > 0 {
+			renderer := renderer.NewTable(d.config)
+			renderer.Render(files, time.Now())
 		}
 
-		renderer := renderer.NewTable(d.config)
-		renderer.Render(files, time.Now())
-
-		for _, file := range files {
-			if file.IsDir {
-				nextLevel := current.level + 1
-				if maxDepth > 0 && nextLevel >= maxDepth {
-					continue
-				}
-				dirPath := filepath.Join(current.path, file.Name)
-				dirs = append(dirs, dirEntry{path: dirPath, level: nextLevel})
+		for _, file := range dirsToTraverse {
+			nextLevel := current.level + 1
+			if maxDepth > 0 && nextLevel >= maxDepth {
+				continue
 			}
+			dirPath := filepath.Join(current.path, file.Name)
+			dirs = append(dirs, dirEntry{path: dirPath, level: nextLevel})
 		}
 	}
 
 	return nil
+}
+
+func (d *Lister) collectFileEntries(paths []fileOperand) []model.FileEntry {
+	cwd, _ := os.Getwd()
+	gitRepos := make(map[string]*git.Repository)
+
+	var files []model.FileEntry
+	for _, operand := range paths {
+		absPath, info := operand.path, operand.info
+		parentDir := filepath.Dir(absPath)
+		relPath, _ := filepath.Rel(cwd, absPath)
+		if relPath == "" {
+			relPath = absPath
+		}
+
+		file := model.FileEntry{
+			Name:     relPath,
+			Path:     absPath,
+			Size:     info.Size(),
+			Mode:     info.Mode(),
+			ModTime:  info.ModTime(),
+			IsDir:    info.IsDir(),
+			IsHidden: strings.HasPrefix(filepath.Base(absPath), "."),
+		}
+
+		if d.config.ShowGit && !file.IsDir {
+			if repo, ok := gitRepos[parentDir]; ok {
+				file.GitStatus = repo.GetStatus(absPath)
+			} else if repo, err := git.NewRepository(parentDir); err == nil {
+				gitRepos[parentDir] = repo
+				file.GitStatus = repo.GetStatus(absPath)
+			}
+		}
+
+		if d.config.ShowUser {
+			file.Author, file.Group = extractUserGroup(info)
+		}
+
+		files = append(files, file)
+	}
+
+	return files
 }
 
 func (d *Lister) collectFiles(path string, entries []fs.DirEntry) []model.FileEntry {

@@ -71,6 +71,7 @@ clean:
 test:
 	@echo "Running tests..."
 	@go test -v ./...
+	@bash tests/install_test.sh
 
 # Format code
 fmt:
